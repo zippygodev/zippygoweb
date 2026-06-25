@@ -1,0 +1,436 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  RESTAURANT_OWNER
+  RESTAURANT_MANAGER
+  KITCHEN_STAFF
+  MALL_ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String?
+  name           String
+  phone          String?
+  avatar         String?
+  role           Role     @default(CUSTOMER)
+  isActive       Boolean  @default(true)
+  refreshToken   String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  restaurant     Restaurant?    @relation("RestaurantOwner")
+  staffOfId      String?
+  staffOf        Restaurant?    @relation("RestaurantStaff", fields: [staffOfId], references: [id])
+  orders         Order[]
+  reviews        Review[]
+  notifications  Notification[]
+  loginHistory   LoginHistory[]
+  carts          Cart[]
+  favorites      Favorite[]
+  conversations  AIConversation[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  userAgent String?
+  location  String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  domain      String?
+  logo        String?
+  address     String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  restaurants   Restaurant[]
+  subscriptions Subscription[]
+  settings      OrganizationSetting[]
+}
+
+model OrganizationSetting {
+  id             String @id @default(cuid())
+  organizationId String
+  key            String
+  value          String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, key])
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  organizationId    String
+  plan              String   @default("starter")
+  status            String   @default("active")
+  startsAt          DateTime @default(now())
+  expiresAt         DateTime?
+  maxRestaurants    Int      @default(1)
+  maxStaff          Int      @default(5)
+  features          Json?
+  paymentProviderId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model Restaurant {
+  id             String   @id @default(cuid())
+  organizationId String
+  ownerId        String   @unique
+  name           String
+  slug           String   @unique
+  description    String?
+  cuisine        String?
+  phone          String?
+  email          String?
+  address        String?
+  logo           String?
+  coverImage     String?
+  rating         Float    @default(0)
+  priceRange     String   @default("$$")
+  deliveryTime   String   @default("20-30")
+  isActive       Boolean  @default(true)
+  isOpen         Boolean  @default(true)
+  openingTime    String   @default("09:00")
+  closingTime    String   @default("22:00")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  owner        User            @relation("RestaurantOwner", fields: [ownerId], references: [id])
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  staff        User[]          @relation("RestaurantStaff")
+  favorites    Favorite[]
+  categories   Category[]
+  products     Product[]
+  orders       Order[]
+  reviews      Review[]
+  coupons      Coupon[]
+  tables       Table[]
+
+  @@index([organizationId])
+  @@index([slug])
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  slug         String
+  description  String?
+  image        String?
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  products   Product[]
+
+  @@unique([restaurantId, slug])
+  @@index([restaurantId])
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  categoryId      String
+  name            String
+  slug            String
+  description     String?
+  price           Float
+  comparePrice    Float?
+  image           String?
+  images          String[]
+  isActive        Boolean  @default(true)
+  isPopular       Boolean  @default(false)
+  preparationTime Int?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  category   Category    @relation(fields: [categoryId], references: [id])
+  variants   Variant[]
+  addons     Addon[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([restaurantId])
+  @@index([categoryId])
+}
+
+model Variant {
+  id        String  @id @default(cuid())
+  productId String
+  name      String
+  price     Float
+  isActive  Boolean @default(true)
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+}
+
+model Addon {
+  id        String  @id @default(cuid())
+  productId String
+  name      String
+  price     Float
+  isActive  Boolean @default(true)
+  maxSelect Int     @default(1)
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+}
+
+model Table {
+  id           String  @id @default(cuid())
+  restaurantId String
+  number       Int
+  capacity     Int     @default(4)
+  qrCode       String?
+  isOccupied   Boolean @default(false)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, number])
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  orderNumber  String      @unique
+  userId       String
+  restaurantId String
+  status       OrderStatus @default(PENDING)
+  subtotal     Float
+  deliveryFee  Float       @default(0)
+  packagingFee Float       @default(0)
+  discount     Float       @default(0)
+  total        Float
+  note         String?
+  tableNumber  Int?
+  isTakeaway   Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  items     OrderItem[]
+  payment   Payment?
+
+  @@index([userId])
+  @@index([restaurantId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  price     Float
+  quantity  Int
+  variant   String?
+  addons    Json?
+  total     Float
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  amount          Float
+  currency        String        @default("INR")
+  status          PaymentStatus @default(PENDING)
+  method          String?
+  provider        String?
+  transactionId   String?
+  paymentIntentId String?
+  refundId        String?
+  refundAmount    Float?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Coupon {
+  id           String   @id @default(cuid())
+  restaurantId String?
+  code         String   @unique
+  type         String   @default("percentage")
+  value        Float
+  minOrder     Float    @default(0)
+  maxDiscount  Float?
+  maxUses      Int?
+  usedCount    Int      @default(0)
+  isActive     Boolean  @default(true)
+  startsAt     DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  @@index([code])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  restaurantId String
+  orderId      String?
+  rating       Int
+  comment      String?
+  images       String[]
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+  @@index([restaurantId])
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id       String  @id @default(cuid())
+  cartId   String
+  productId String
+  quantity Int
+  variant  String?
+  addons   Json?
+  price    Float
+
+  cart    Cart    @relation(fields: [cartId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([cartId])
+}
+
+model Favorite {
+  id           String   @id @default(cuid())
+  userId       String
+  restaurantId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  response  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String?
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
