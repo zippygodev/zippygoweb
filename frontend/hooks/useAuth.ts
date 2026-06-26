@@ -22,7 +22,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithPhone: (phone: string, otp: string) => Promise<void>;
-  sendOTP: (phone: string) => Promise<void>;
+  sendOTP: (phone: string) => Promise<any>;
   register: (data: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -51,7 +51,8 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   sendOTP: async (phone) => {
-    await api.post("/auth/send-otp", { phone });
+    const { data } = await api.post("/auth/send-otp", { phone });
+    return data;
   },
 
   register: async (registerData) => {

@@ -12,6 +12,10 @@ export class AiService {
 
   constructor(private prisma: PrismaService) {}
 
+  private getBaseUrl(): string {
+    return process.env.AI_SERVICE_URL || "http://localhost:8000";
+  }
+
   async chat(userId: string, message: string, history: ChatMessage[]) {
     // Store conversation in DB
     await this.prisma.aIConversation.create({
@@ -23,10 +27,40 @@ export class AiService {
       },
     });
 
-    // Build a contextual response based on the user's message
-    const response = await this.generateSmartResponse(userId, message, history);
+    let response = "";
+    let useFallback = true;
 
-    // Update the stored conversation with the actual response
+    // Try Python AI microservice first
+    try {
+      const baseUrl = this.getBaseUrl();
+      const responseStream = await fetch(`${baseUrl}/api/v1/chat/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          message,
+          conversation_id: null,
+        }),
+      });
+
+      if (responseStream.ok) {
+        const data = await responseStream.json();
+        if (data && data.reply) {
+          response = data.reply;
+          useFallback = false;
+          this.logger.log("Chat response retrieved from AI service");
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`AI service chat failed: ${err.message}. Falling back to internal engine.`);
+    }
+
+    // Fallback to internal keyword-based engine
+    if (useFallback) {
+      response = await this.generateSmartResponse(userId, message, history);
+    }
+
+    // Update stored conversation with actual response
     await this.prisma.aIConversation
       .findFirst({ where: { userId, message }, orderBy: { createdAt: "desc" } })
       .then(async (conv) => {
@@ -148,7 +182,7 @@ export class AiService {
   }
 
   async getRecommendations(userId: string) {
-    // Get user order history for personalization
+    // Check user order history for personalization
     const userOrders = await this.prisma.order.findMany({
       where: { userId },
       include: { items: { include: { product: { include: { category: true } } } } },
@@ -170,7 +204,7 @@ export class AiService {
       .slice(0, 3);
 
     // Recommend based on top categories, or fall back to popular items
-    let recommendations = [];
+    let recommendations: any[] = [];
     if (topCategories.length > 0) {
       recommendations = await this.prisma.product.findMany({
         where: {
@@ -251,45 +285,77 @@ export class AiService {
   }
 
   async getDemandForecast(restaurantId: string) {
-    // Simple demand forecast based on historical order patterns
-    const orders = await this.prisma.order.findMany({
-      where: { restaurantId },
-      select: { createdAt: true, total: true },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    let useFallback = true;
+    let forecastData: any = null;
 
-    const dayOfWeekCounts: Record<number, number> = {};
-    const hourCounts: Record<number, number> = {};
+    // Try to fetch forecast from AI microservice
+    try {
+      const baseUrl = this.getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/v1/analytics/demand-prediction/${restaurantId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.predictions) {
+          const preds = data.predictions;
+          forecastData = {
+            peakDay: "Calculated Peak",
+            peakHour: preds[0]?.peak_hours?.join(", ") || "Lunch/Dinner",
+            totalOrdersAnalyzed: "AI prediction model active",
+            forecast: `Predicted orders: ${preds.map((p: any) => `${p.date}: ${p.predicted_orders}`).join(", ")}`,
+            suggestions: [
+              "AI: Optimization and demand prediction active",
+              "Schedule staff according to predicted demand peaks",
+            ],
+          };
+          useFallback = false;
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`AI service demand forecast failed: ${err.message}. Falling back to internal engine.`);
+    }
 
-    orders.forEach((order) => {
-      const d = new Date(order.createdAt);
-      const dow = d.getDay();
-      const hour = d.getHours();
-      dayOfWeekCounts[dow] = (dayOfWeekCounts[dow] || 0) + 1;
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-    });
+    if (useFallback) {
+      // Simple demand forecast based on historical order patterns
+      const orders = await this.prisma.order.findMany({
+        where: { restaurantId },
+        select: { createdAt: true, total: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      });
 
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const peakDay = Object.keys(dayOfWeekCounts).reduce((a, b) =>
-      dayOfWeekCounts[Number(a)] > dayOfWeekCounts[Number(b)] ? a : b,
-      "5",
-    );
-    const peakHour = Object.keys(hourCounts).reduce((a, b) =>
-      hourCounts[Number(a)] > hourCounts[Number(b)] ? a : b,
-      "12",
-    );
+      const dayOfWeekCounts: Record<number, number> = {};
+      const hourCounts: Record<number, number> = {};
 
-    return {
-      peakDay: days[Number(peakDay)],
-      peakHour: `${peakHour}:00 - ${Number(peakHour) + 1}:00`,
-      totalOrdersAnalyzed: orders.length,
-      forecast: "Based on historical patterns, expect higher demand on weekends and lunch hours.",
-      suggestions: [
-        "Stock up inventory before peak hours",
-        "Schedule extra staff on peak days",
-        "Consider time-based promotions during off-peak hours",
-      ],
-    };
+      orders.forEach((order) => {
+        const d = new Date(order.createdAt);
+        const dow = d.getDay();
+        const hour = d.getHours();
+        dayOfWeekCounts[dow] = (dayOfWeekCounts[dow] || 0) + 1;
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      });
+
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const peakDay = Object.keys(dayOfWeekCounts).reduce((a, b) =>
+        dayOfWeekCounts[Number(a)] > dayOfWeekCounts[Number(b)] ? a : b,
+        "5",
+      );
+      const peakHour = Object.keys(hourCounts).reduce((a, b) =>
+        hourCounts[Number(a)] > hourCounts[Number(b)] ? a : b,
+        "12",
+      );
+
+      forecastData = {
+        peakDay: days[Number(peakDay)],
+        peakHour: `${peakHour}:00 - ${Number(peakHour) + 1}:00`,
+        totalOrdersAnalyzed: orders.length,
+        forecast: "Based on historical patterns, expect higher demand on weekends and lunch hours.",
+        suggestions: [
+          "Stock up inventory before peak hours",
+          "Schedule extra staff on peak days",
+          "Consider time-based promotions during off-peak hours",
+        ],
+      };
+    }
+
+    return forecastData;
   }
 }

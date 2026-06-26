@@ -117,7 +117,7 @@ export default function CheckoutPage() {
       key: rzpData.key,
       amount: rzpData.amount,
       currency: rzpData.currency,
-      name: "FoodCourtOS",
+      name: "ZIPPY GO",
       description: `Order #${backendOrderId.slice(-8).toUpperCase()}`,
       order_id: rzpData.razorpayOrderId,
       handler: async (response: any) => {
@@ -137,7 +137,7 @@ export default function CheckoutPage() {
         }
       },
       prefill: { name: "", email: "", contact: "" },
-      theme: { color: "#10b981" },
+      theme: { color: "#FFD93D" },
       modal: {
         ondismiss: () => {
           setIsProcessing(false);
@@ -191,9 +191,9 @@ export default function CheckoutPage() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30"
+          className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 dark:bg-primary/10"
         >
-          <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+          <CheckCircle2 className="h-12 w-12 text-primary-dark" />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -241,7 +241,7 @@ export default function CheckoutPage() {
           {/* Delivery Details */}
           <Card className="p-6">
             <div className="mb-4 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-emerald-500" />
+              <MapPin className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">Delivery Details</h2>
             </div>
             <div className="space-y-4">
@@ -269,7 +269,7 @@ export default function CheckoutPage() {
           {/* Payment Method */}
           <Card className="p-6">
             <div className="mb-4 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-emerald-500" />
+              <CreditCard className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">Payment Method</h2>
             </div>
             <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="gap-3">
@@ -278,9 +278,9 @@ export default function CheckoutPage() {
                   <RadioGroupItem value={method.id} id={method.id} className="peer sr-only" />
                   <Label
                     htmlFor={method.id}
-                    className="flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-all peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-50 peer-data-[state=checked]:ring-1 peer-data-[state=checked]:ring-emerald-500 hover:bg-accent dark:peer-data-[state=checked]:bg-emerald-900/20"
+                    className="flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 peer-data-[state=checked]:ring-1 peer-data-[state=checked]:ring-primary hover:bg-accent dark:peer-data-[state=checked]:bg-primary/5"
                   >
-                    <method.icon className="h-6 w-6 text-emerald-600" />
+                    <method.icon className="h-6 w-6 text-foreground" />
                     <div>
                       <p className="font-medium">{method.name}</p>
                       <p className="text-sm text-muted-foreground">{method.description}</p>
@@ -341,12 +341,12 @@ export default function CheckoutPage() {
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span className="text-emerald-600">{formatPrice(total)}</span>
+                <span className="text-amber-600 dark:text-primary">{formatPrice(total)}</span>
               </div>
             </div>
 
             <Button
-              className="mt-6 w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+              className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary-dark font-bold shadow-md"
               size="lg"
               onClick={handlePlaceOrder}
               disabled={isProcessing || items.length === 0}

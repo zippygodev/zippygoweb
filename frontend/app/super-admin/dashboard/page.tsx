@@ -57,8 +57,8 @@ export default function SuperAdminDashboard() {
       label: "Total Revenue",
       value: isLoading ? "—" : formatPrice(stats?.totalRevenue || 0),
       icon: DollarSign,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
+      color: "text-amber-600 dark:text-primary",
+      bg: "bg-primary/20 dark:bg-primary/10",
     },
     {
       label: "Active Users",
@@ -123,7 +123,7 @@ export default function SuperAdminDashboard() {
         {/* System Health */}
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2">
-            <Server className="h-5 w-5 text-emerald-500" />
+            <Server className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">System Health</h2>
             <Badge variant="success" className="ml-auto text-[10px]">
               All Systems Operational
@@ -138,7 +138,7 @@ export default function SuperAdminDashboard() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`h-2.5 w-2.5 rounded-full ${
-                      service.status === "healthy" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                      service.status === "healthy" ? "bg-success animate-pulse" : "bg-warning"
                     }`}
                   />
                   <div>
@@ -163,7 +163,7 @@ export default function SuperAdminDashboard() {
         {/* Organizations */}
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2">
-            <Globe className="h-5 w-5 text-emerald-500" />
+            <Globe className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">Organizations</h2>
           </div>
           <div className="space-y-3">
@@ -180,7 +180,7 @@ export default function SuperAdminDashboard() {
               : orgs?.slice(0, 5).map((org: any, i: number) => (
                   <div key={org.id} className="flex items-center justify-between rounded-xl border p-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-lg font-bold text-emerald-700 dark:from-emerald-900/30 dark:to-emerald-800/30">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 text-lg font-bold text-primary-dark">
                         {org.name?.[0] || "O"}
                       </div>
                       <div>
@@ -191,7 +191,7 @@ export default function SuperAdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {org.isActive && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                      {org.isActive && <CheckCircle2 className="h-4 w-4 text-success" />}
                       <Badge variant={org.isActive ? "success" : "secondary"} className="text-[10px]">
                         {org.isActive ? "Active" : "Inactive"}
                       </Badge>

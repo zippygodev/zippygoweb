@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Smartphone, ArrowLeft } from "lucide-react";
+import { Zap, ArrowLeft } from "lucide-react";
 
 export default function VerifyOTPPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function VerifyOTPPage() {
       return;
     }
     try {
-      toast.success("Phone verified!");
+      toast.success("Phone verified! Welcome to Zippy Go.");
       router.push("/home");
     } catch {
       toast.error("Invalid OTP");
@@ -49,7 +49,10 @@ export default function VerifyOTPPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-emerald-950 dark:via-black dark:to-emerald-900">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-primary/10 via-background to-primary/5 dark:from-primary/5 dark:via-black dark:to-transparent">
+      {/* Background Dots */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
+
       <div className="relative flex min-h-screen items-center justify-center px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -59,7 +62,7 @@ export default function VerifyOTPPage() {
         >
           <button
             onClick={() => router.back()}
-            className="mb-6 flex items-center text-sm text-muted-foreground hover:text-foreground"
+            className="mb-6 flex items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
@@ -70,17 +73,17 @@ export default function VerifyOTPPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
-              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg"
+              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg"
             >
-              <Smartphone className="h-8 w-8 text-white" />
+              <Zap className="h-8 w-8 fill-current" />
             </motion.div>
-            <h1 className="text-3xl font-bold tracking-tight">Verify OTP</h1>
-            <p className="mt-2 text-muted-foreground">
-              Enter the code sent to your phone
+            <h1 className="text-3xl font-extrabold tracking-tight">Verify OTP</h1>
+            <p className="mt-2 text-muted-foreground text-sm font-medium">
+              Enter the 6-digit verification code sent to your mobile
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white/80 p-8 shadow-2xl backdrop-blur-xl dark:bg-black/80">
+          <div className="rounded-2xl border border-border bg-white/80 p-8 shadow-2xl backdrop-blur-xl dark:bg-card/80">
             <div className="mb-8 flex justify-center gap-3">
               {otp.map((digit, index) => (
                 <Input
@@ -92,7 +95,7 @@ export default function VerifyOTPPage() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="h-14 w-14 text-center text-xl font-bold"
+                  className="h-14 w-12 text-center text-xl font-bold rounded-xl focus-visible:ring-primary/30 focus-visible:border-primary border-2"
                 />
               ))}
             </div>
@@ -103,13 +106,13 @@ export default function VerifyOTPPage() {
               onClick={handleVerify}
               disabled={isLoading || otp.join("").length !== 6}
             >
-              {isLoading ? "Verifying..." : "Verify"}
+              {isLoading ? "Verifying..." : "Verify Code"}
             </Button>
 
-            <p className="mt-4 text-center text-sm text-muted-foreground">
+            <p className="mt-6 text-center text-sm text-muted-foreground">
               Didn&apos;t receive the code?{" "}
-              <button className="font-medium text-primary hover:underline">
-                Resend
+              <button className="font-bold text-primary hover:underline transition-colors">
+                Resend SMS
               </button>
             </p>
           </div>

@@ -4,8 +4,11 @@ import {
   Get,
   Body,
   UseGuards,
+  Req,
+  Res,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
+import { AuthGuard } from "@nestjs/passport";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
@@ -54,5 +57,21 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser() user: { id: string }) {
     return this.authService.getProfile(user.id);
+  }
+
+  @Get("google")
+  @UseGuards(AuthGuard("google"))
+  async googleAuth() {
+    // Redirects to Google login
+  }
+
+  @Get("google/callback")
+  @UseGuards(AuthGuard("google"))
+  async googleAuthCallback(@Req() req: any, @Res() res: any) {
+    const tokens = await this.authService.validateGoogleUser(req.user);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    return res.redirect(
+      `${frontendUrl}/login?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`,
+    );
   }
 }

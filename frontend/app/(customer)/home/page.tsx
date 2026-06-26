@@ -98,7 +98,7 @@ export default function HomePage() {
       >
         <h1 className="text-3xl font-bold tracking-tight">
           {greeting()},{" "}
-          <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">
             {user?.name?.split(" ")[0] || "Guest"}
           </span>
           ! 👋
@@ -120,14 +120,14 @@ export default function HomePage() {
           placeholder="Search for restaurants, cuisines, or dishes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="h-14 w-full rounded-2xl border bg-white pl-12 pr-32 text-base shadow-sm outline-none ring-offset-background transition-all focus:ring-2 focus:ring-emerald-500 dark:bg-black/50"
+          className="h-14 w-full rounded-2xl border bg-white pl-12 pr-32 text-base shadow-sm outline-none transition-all focus:border-info focus:ring-2 focus:ring-info/30 dark:bg-black/50"
         />
         <Link href="/ai-chat">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-3 top-1/2 -translate-y-1/2 gap-1.5 text-emerald-600 hover:text-emerald-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 gap-1.5 text-amber-600 hover:text-amber-700"
           >
             <Bot className="h-4 w-4" />
             AI Search
@@ -139,7 +139,7 @@ export default function HomePage() {
       <section className="mb-10">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Browse by Category</h2>
-          <Button variant="ghost" size="sm" className="text-emerald-600">
+          <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700">
             View All
           </Button>
         </div>
@@ -166,11 +166,11 @@ export default function HomePage() {
       {trending.length > 0 && (
         <section className="mb-10">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <Sparkles className="h-4 w-4 fill-current" />
             </div>
             <h2 className="text-xl font-semibold">AI Trending Now</h2>
-            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30">Popular</Badge>
+            <Badge className="bg-primary/20 text-foreground dark:bg-primary/10">Popular</Badge>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {trending.slice(0, 6).map((item: any, i: number) => (
@@ -193,7 +193,7 @@ export default function HomePage() {
                     <div className="p-3">
                       <p className="truncate text-sm font-semibold">{item.name}</p>
                       <p className="truncate text-xs text-muted-foreground">{item.restaurant?.name}</p>
-                      <p className="mt-1 text-sm font-bold text-emerald-600">{formatPrice(item.price)}</p>
+                      <p className="mt-1 text-sm font-bold text-amber-600">{formatPrice(item.price)}</p>
                     </div>
                   </Card>
                 </Link>
@@ -207,13 +207,13 @@ export default function HomePage() {
       <section className="mb-10">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
+            <TrendingUp className="h-5 w-5 text-primary" />
             <h2 className="text-xl font-semibold">
               {isLoading ? "Loading Restaurants..." : "Restaurants Near You"}
             </h2>
           </div>
           <Link href="/restaurants">
-            <Button variant="ghost" size="sm" className="text-emerald-600">
+            <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700">
               View All
             </Button>
           </Link>
@@ -239,7 +239,7 @@ export default function HomePage() {
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center bg-gradient-to-br from-emerald-100 to-emerald-50 text-5xl dark:from-emerald-900/20 dark:to-emerald-950/20">
+                          <div className="flex h-full items-center justify-center bg-secondary text-5xl">
                             🏪
                           </div>
                         )}
@@ -334,7 +334,7 @@ export default function HomePage() {
       {/* AI Chat FAB */}
       <Link
         href="/ai-chat"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-amber-500 px-4 py-3 text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
       >
         <Bot className="h-5 w-5" />
         <span className="text-sm font-medium">AI Assistant</span>

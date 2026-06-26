@@ -24,7 +24,7 @@ export default function SearchPage() {
       <div className="relative mb-8">
         <div className="relative">
           {isAISearch ? (
-            <Sparkles className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-500" />
+            <Sparkles className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
           ) : (
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           )}
@@ -43,7 +43,7 @@ export default function SearchPage() {
               onClick={() => setIsAISearch(!isAISearch)}
               className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 isAISearch
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                  ? "bg-primary/20 text-foreground dark:bg-primary/10"
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
@@ -59,7 +59,7 @@ export default function SearchPage() {
 
       <div className="mb-8">
         <div className="mb-3 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-emerald-500" />
+          <TrendingUp className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-medium">Trending Searches</h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -104,10 +104,10 @@ export default function SearchPage() {
           </p>
 
           {isAISearch ? (
-            <Card className="rounded-2xl border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+            <Card className="rounded-2xl border-primary/30 bg-primary/5 p-6 dark:border-primary/20 dark:bg-primary/5">
               <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-emerald-500" />
-                <span className="font-medium text-emerald-700 dark:text-emerald-400">AI Suggestion</span>
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-primary-dark dark:text-primary">AI Suggestion</span>
               </div>
               <p className="mb-4 text-sm text-muted-foreground">
                 Based on your craving for &ldquo;{query}&rdquo;, we recommend trying Pizza Paradise&apos;s
@@ -134,7 +134,7 @@ export default function SearchPage() {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{item.restaurant}</p>
-                  <p className="text-sm font-semibold text-emerald-600">{item.price}</p>
+                  <p className="text-sm font-semibold text-amber-600 dark:text-primary">{item.price}</p>
                 </div>
               </Card>
             ))}

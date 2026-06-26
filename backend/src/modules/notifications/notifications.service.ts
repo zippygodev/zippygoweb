@@ -1,12 +1,29 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { FirebaseService } from "./firebase.service";
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private firebaseService: FirebaseService,
+  ) {}
 
-  async create(data: { userId: string; title: string; body: string; type?: string }) {
-    return this.prisma.notification.create({ data: { ...data, type: data.type || "info" } });
+  async create(data: { userId: string; title: string; body: string; type?: string; fcmToken?: string }) {
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: data.userId,
+        title: data.title,
+        body: data.body,
+        type: data.type || "info",
+      },
+    });
+
+    if (data.fcmToken) {
+      await this.firebaseService.sendPushNotification(data.fcmToken, data.title, data.body);
+    }
+
+    return notification;
   }
 
   async findByUser(userId: string) {

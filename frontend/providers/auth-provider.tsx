@@ -13,6 +13,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      if (token) {
+        localStorage.setItem("accessToken", token);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
     checkAuth();
   }, [checkAuth]);
 

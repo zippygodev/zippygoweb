@@ -42,3 +42,6 @@ docker-data/
 
 # Prisma
 prisma/*.db
+
+# SSL Certs
+infra/certs/

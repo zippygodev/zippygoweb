@@ -98,7 +98,7 @@ export default function CartPage() {
                     <h3 className="font-medium truncate">{item.name}</h3>
                     <p className="text-sm text-muted-foreground">{item.restaurantName}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <span className="font-semibold text-emerald-600">
+                      <span className="font-semibold text-amber-600 dark:text-primary">
                         {formatPrice(item.price)}
                       </span>
                     </div>
@@ -173,7 +173,7 @@ export default function CartPage() {
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span className="text-emerald-600">{formatPrice(total)}</span>
+                <span className="text-amber-600 dark:text-primary">{formatPrice(total)}</span>
               </div>
             </div>
 

@@ -86,12 +86,12 @@ export default function AIChatPage() {
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-4xl flex-col px-4">
       <div className="flex items-center justify-between py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg">
-            <Bot className="h-5 w-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
+            <Bot className="h-5 w-5 fill-current" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold">FoodCourtOS AI</h1>
-            <p className="text-xs text-emerald-600">
+            <h1 className="text-lg font-semibold">ZIPPY GO AI</h1>
+            <p className="text-xs text-amber-600 dark:text-primary">
               {isLoading ? "Thinking..." : "Online • Powered by real data"}
             </p>
           </div>
@@ -112,9 +112,9 @@ export default function AIChatPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200 }}
-                className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-xl"
+                className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-xl"
               >
-                <Sparkles className="h-10 w-10 text-white" />
+                <Sparkles className="h-10 w-10 fill-current" />
               </motion.div>
               <h2 className="mb-2 text-2xl font-bold">How can I help you?</h2>
               <p className="mb-8 max-w-sm text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export default function AIChatPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => handleSend(s)}
-                    className="rounded-full border bg-white px-4 py-2 text-sm font-medium transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-black/50 dark:hover:bg-emerald-900/30"
+                    className="rounded-full border bg-white px-4 py-2 text-sm font-medium transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary-dark dark:bg-black/50 dark:hover:bg-primary/5"
                   >
                     {s}
                   </motion.button>
@@ -147,14 +147,14 @@ export default function AIChatPage() {
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
-                        <Bot className="h-4 w-4 text-white" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Bot className="h-4 w-4 fill-current" />
                       </div>
                     )}
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === "user"
-                          ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md"
+                          ? "bg-primary text-primary-foreground font-semibold shadow-md"
                           : "bg-muted dark:bg-gray-800"
                       }`}
                     >
@@ -163,8 +163,8 @@ export default function AIChatPage() {
                       </p>
                     </div>
                     {msg.role === "user" && (
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
-                        <User className="h-4 w-4 text-white" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 shadow-sm">
+                        <User className="h-4 w-4 text-foreground" />
                       </div>
                     )}
                   </motion.div>
@@ -172,15 +172,15 @@ export default function AIChatPage() {
               </AnimatePresence>
               {isLoading && (
                 <div className="flex gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
-                    <Bot className="h-4 w-4 text-white" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                    <Bot className="h-4 w-4 fill-current" />
                   </div>
                   <div className="rounded-2xl bg-muted px-4 py-3 dark:bg-gray-800">
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <div
                           key={i}
-                          className="h-2 w-2 animate-bounce rounded-full bg-emerald-400"
+                          className="h-2 w-2 animate-bounce rounded-full bg-primary-dark"
                           style={{ animationDelay: `${i * 0.15}s` }}
                         />
                       ))}
@@ -204,7 +204,7 @@ export default function AIChatPage() {
         />
         <Button
           size="icon"
-          className="h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+          className="h-12 w-12 shrink-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary-dark"
           onClick={() => handleSend()}
           disabled={isLoading || !input.trim()}
         >

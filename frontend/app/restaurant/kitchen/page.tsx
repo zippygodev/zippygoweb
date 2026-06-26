@@ -126,7 +126,7 @@ export default function KitchenDisplayPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">Kitchen Display</h1>
-            <div className={`flex items-center gap-1.5 text-xs ${isConnected ? "text-emerald-600" : "text-red-500"}`}>
+            <div className={`flex items-center gap-1.5 text-xs ${isConnected ? "text-success" : "text-destructive"}`}>
               {isConnected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
               <span>{isConnected ? "Live" : "Offline"}</span>
             </div>
@@ -194,7 +194,7 @@ export default function KitchenDisplayPage() {
                     order.status === "PREPARING"
                       ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
                       : order.status === "READY"
-                      ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20"
+                      ? "border-success/30 bg-success/5 dark:border-success/20 dark:bg-success/5"
                       : ""
                   }`}
                 >
@@ -233,7 +233,7 @@ export default function KitchenDisplayPage() {
                     {order.items.map((item) => (
                       <div key={item.id} className="rounded-lg bg-muted/50 px-3 py-2">
                         <p className="font-medium">
-                          <span className="text-emerald-600">{item.quantity}x</span>{" "}
+                          <span className="text-amber-600 dark:text-primary font-bold">{item.quantity}x</span>{" "}
                           {item.product?.name || item.name}
                         </p>
                         {item.variant && (
@@ -277,7 +277,7 @@ export default function KitchenDisplayPage() {
                     {order.status === "PREPARING" && (
                       <Button
                         size="sm"
-                        className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                        className="flex-1 gap-1.5 bg-success text-success-foreground hover:bg-success/90"
                         onClick={() => updateStatus.mutate({ orderId: order.id, status: "READY" })}
                         disabled={updateStatus.isPending}
                       >

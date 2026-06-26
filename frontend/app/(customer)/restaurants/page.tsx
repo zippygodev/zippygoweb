@@ -7,26 +7,46 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Search, Star, Clock, MapPin, SlidersHorizontal } from "lucide-react";
+import { Search, Star, Clock, MapPin, SlidersHorizontal, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
-const allRestaurants = [
-  { id: "1", name: "Pizza Paradise", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", rating: 4.5, deliveryTime: "25-35", cuisine: "Italian", priceRange: "$$", open: true },
-  { id: "2", name: "Dragon Wok", image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400", rating: 4.3, deliveryTime: "20-30", cuisine: "Chinese", priceRange: "$$", open: true },
-  { id: "3", name: "Burger Barn", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400", rating: 4.7, deliveryTime: "15-25", cuisine: "American", priceRange: "$", open: true },
-  { id: "4", name: "Sushi Master", image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400", rating: 4.6, deliveryTime: "30-40", cuisine: "Japanese", priceRange: "$$$", open: true },
-  { id: "5", name: "Taco Fiesta", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400", rating: 4.4, deliveryTime: "20-30", cuisine: "Mexican", priceRange: "$", open: true },
-  { id: "6", name: "Green Bowl", image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400", rating: 4.2, deliveryTime: "15-20", cuisine: "Healthy", priceRange: "$$", open: false },
-  { id: "7", name: "Curry House", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400", rating: 4.5, deliveryTime: "25-35", cuisine: "Indian", priceRange: "$$", open: true },
-  { id: "8", name: "Pho Nation", image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400", rating: 4.1, deliveryTime: "20-30", cuisine: "Vietnamese", priceRange: "$", open: true },
+const fallbackRestaurants = [
+  { id: "1", name: "Pizza Paradise", slug: "pizza-paradise", coverImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", rating: 4.5, deliveryTime: "25-35", cuisine: "Italian", priceRange: "$$", isOpen: true },
+  { id: "2", name: "Dragon Wok", slug: "dragon-wok", coverImage: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400", rating: 4.3, deliveryTime: "20-30", cuisine: "Chinese", priceRange: "$$", isOpen: true },
+  { id: "3", name: "Burger Barn", slug: "burger-barn", coverImage: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400", rating: 4.7, deliveryTime: "15-25", cuisine: "American", priceRange: "$", isOpen: true },
+  { id: "4", name: "Sushi Master", slug: "sushi-master", coverImage: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400", rating: 4.6, deliveryTime: "30-40", cuisine: "Japanese", priceRange: "$$$", isOpen: true },
+  { id: "5", name: "Taco Fiesta", slug: "taco-fiesta", coverImage: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400", rating: 4.4, deliveryTime: "20-30", cuisine: "Mexican", priceRange: "$", isOpen: true },
 ];
 
 export default function RestaurantsPage() {
   const [search, setSearch] = React.useState("");
+  const [restaurants, setRestaurants] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const filtered = allRestaurants.filter(
+  React.useEffect(() => {
+    async function fetchRestaurants() {
+      try {
+        const { data } = await api.get("/restaurants?limit=20");
+        const list = data?.data || data || [];
+        if (list.length > 0) {
+          setRestaurants(list);
+        } else {
+          setRestaurants(fallbackRestaurants);
+        }
+      } catch (err) {
+        console.error("Failed to load restaurants from API, using fallback data", err);
+        setRestaurants(fallbackRestaurants);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRestaurants();
+  }, []);
+
+  const filtered = restaurants.filter(
     (r) =>
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.cuisine.toLowerCase().includes(search.toLowerCase()),
+      r.name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.cuisine?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -51,55 +71,69 @@ export default function RestaurantsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((restaurant, i) => (
-          <motion.div
-            key={restaurant.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.03 }}
-          >
-            <Link href={`/restaurants/${restaurant.id}`}>
-              <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
-                <div className="relative h-40 overflow-hidden">
-                  <img
-                    src={restaurant.image}
-                    alt={restaurant.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  {!restaurant.open && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                      <span className="rounded-full bg-white px-4 py-1 text-sm font-medium text-black">
-                        Closed
-                      </span>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((restaurant, i) => (
+            <motion.div
+              key={restaurant.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+            >
+              <Link href={`/restaurants/${restaurant.slug || restaurant.id}`}>
+                <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <div className="relative h-40 overflow-hidden bg-muted">
+                    {(restaurant.coverImage || restaurant.logo || restaurant.image) ? (
+                      <img
+                        src={restaurant.coverImage || restaurant.logo || restaurant.image}
+                        alt={restaurant.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-secondary text-5xl">
+                        🏪
+                      </div>
+                    )}
+                    {restaurant.isOpen === false && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="rounded-full bg-white px-4 py-1 text-sm font-medium text-black">
+                          Closed
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 left-2">
+                      <Badge variant="secondary" className="bg-white/90 backdrop-blur dark:bg-black/90">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {restaurant.deliveryTime || "20-30"} min
+                      </Badge>
                     </div>
-                  )}
-                  <div className="absolute bottom-2 left-2">
-                    <Badge variant="secondary" className="bg-white/90 backdrop-blur dark:bg-black/90">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {restaurant.deliveryTime} min
-                    </Badge>
                   </div>
-                </div>
-                <div className="p-4">
-                  <div className="mb-1 flex items-start justify-between">
-                    <h3 className="font-semibold">{restaurant.name}</h3>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      <span className="font-medium">{restaurant.rating}</span>
+                  <div className="p-4">
+                    <div className="mb-1 flex items-start justify-between">
+                      <h3 className="font-semibold truncate max-w-[70%]">{restaurant.name}</h3>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-medium">
+                          {typeof restaurant.rating === "number" ? restaurant.rating.toFixed(1) : restaurant.rating || "4.5"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{restaurant.cuisine || "Multi-cuisine"}</span>
+                      <span>•</span>
+                      <span>{restaurant.priceRange || "$$"}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{restaurant.cuisine}</span>
-                    <span>•</span>
-                    <span>{restaurant.priceRange}</span>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+                </Card>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

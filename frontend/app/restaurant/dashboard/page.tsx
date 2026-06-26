@@ -63,8 +63,8 @@ function StatCard({
   return (
     <Card className="p-6">
       <div className="mb-4 flex items-center justify-between">
-        <div className="rounded-xl bg-emerald-100 p-2.5 dark:bg-emerald-900/30">
-          <Icon className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl bg-primary/20 p-2.5">
+          <Icon className="h-5 w-5 text-primary-dark" />
         </div>
         {!loading && (
           <Badge
@@ -247,8 +247,8 @@ export default function RestaurantDashboard() {
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#FFD93D" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#FFD93D" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -263,7 +263,7 @@ export default function RestaurantDashboard() {
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#10b981"
+                  stroke="#FFD93D"
                   strokeWidth={2}
                   fill="url(#revenueGrad)"
                 />
@@ -280,15 +280,15 @@ export default function RestaurantDashboard() {
         {aiInsights && (
           <Card className="p-6">
             <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600">
-                <Sparkles className="h-4 w-4 text-white" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                <Sparkles className="h-4 w-4 fill-current" />
               </div>
               <h2 className="text-lg font-semibold">AI Insights</h2>
             </div>
             <div className="space-y-3 text-sm">
-              <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/20">
-                <p className="font-medium text-emerald-800 dark:text-emerald-300">Peak Day</p>
-                <p className="text-emerald-700 dark:text-emerald-400">{aiInsights.peakDay}</p>
+              <div className="rounded-xl bg-primary/10 p-3">
+                <p className="font-semibold text-primary-dark">Peak Day</p>
+                <p className="text-foreground">{aiInsights.peakDay}</p>
               </div>
               <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-900/20">
                 <p className="font-medium text-blue-800 dark:text-blue-300">Peak Hour</p>
@@ -297,7 +297,7 @@ export default function RestaurantDashboard() {
               <div className="space-y-1.5">
                 {aiInsights.suggestions?.map((s: string, i: number) => (
                   <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
+                    <span className="mt-0.5 shrink-0 text-primary-dark">✓</span>
                     <span>{s}</span>
                   </div>
                 ))}
@@ -360,7 +360,7 @@ export default function RestaurantDashboard() {
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Top Items</h2>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <div className="space-y-3">
             {isLoading
@@ -376,7 +376,7 @@ export default function RestaurantDashboard() {
               : stats?.popularProducts?.length > 0
               ? stats.popularProducts.map((item: any, i: number) => (
                   <div key={item.productId} className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-lg font-bold text-emerald-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-lg font-bold text-primary-dark">
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -384,7 +384,7 @@ export default function RestaurantDashboard() {
                       <p className="text-xs text-muted-foreground">{item._sum.quantity} sold</p>
                     </div>
                     {item.product?.price && (
-                      <span className="text-sm font-medium text-emerald-600">
+                      <span className="text-sm font-medium text-amber-600 dark:text-primary">
                         {formatPrice(item.product.price)}
                       </span>
                     )}

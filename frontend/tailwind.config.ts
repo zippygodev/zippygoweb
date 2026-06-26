@@ -30,6 +30,8 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          dark: "hsl(var(--primary-dark))",
+          light: "hsl(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -62,6 +64,21 @@ const config: Config = {
           accent: "hsl(var(--sidebar-accent))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--error))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+        },
+        rating: {
+          DEFAULT: "hsl(var(--rating))",
         },
       },
       borderRadius: {

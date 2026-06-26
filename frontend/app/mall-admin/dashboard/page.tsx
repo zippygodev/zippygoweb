@@ -78,8 +78,8 @@ export default function MallAdminDashboard() {
       value: isLoading ? "—" : formatPrice(stats?.totalRevenue || 0),
       desc: `Today: ${formatPrice(stats?.todayRevenue || 0)}`,
       icon: DollarSign,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
+      color: "text-amber-600 dark:text-primary",
+      bg: "bg-primary/20 dark:bg-primary/10",
     },
     {
       label: "Total Orders",
@@ -174,7 +174,7 @@ export default function MallAdminDashboard() {
               {stats.topRestaurants.map((r: any, i: number) => (
                 <div key={r.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-600 dark:bg-emerald-900/30">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary-dark">
                       {i + 1}
                     </span>
                     <div>
@@ -183,7 +183,7 @@ export default function MallAdminDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-emerald-600">{formatPrice(r.revenue)}</p>
+                    <p className="font-semibold text-amber-600 dark:text-primary">{formatPrice(r.revenue)}</p>
                     <div className="flex items-center justify-end gap-1 text-sm text-amber-500">
                       <Star className="h-3.5 w-3.5 fill-current" /> {r.rating}
                     </div>
@@ -215,8 +215,8 @@ export default function MallAdminDashboard() {
                 >
                   <defs>
                     <linearGradient id="colorMallRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#FFD93D" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#FFD93D" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
@@ -245,7 +245,7 @@ export default function MallAdminDashboard() {
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#10b981"
+                    stroke="#FFD93D"
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorMallRevenue)"
