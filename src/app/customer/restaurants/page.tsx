@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -54,7 +54,7 @@ const allRestaurants = [
 
 type SortOption = 'rating' | 'deliveryTime' | 'minOrder';
 
-export default function RestaurantsPage() {
+function RestaurantsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -285,6 +285,14 @@ export default function RestaurantsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RestaurantsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-center text-sm text-muted-foreground">Loading restaurants...</div>}>
+      <RestaurantsPageInner />
+    </Suspense>
   );
 }
 

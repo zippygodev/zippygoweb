@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -71,7 +71,7 @@ interface LoginFormProps {
   expectedRole?: 'CUSTOMER' | 'RESTAURANT_OWNER' | 'DELIVERY_PARTNER' | 'MALL_ADMIN' | 'SUPER_ADMIN';
 }
 
-export function LoginForm({
+function LoginFormInner({
   title = 'Welcome back',
   description = 'Sign in to your Zippy Go account',
   registerLink = '/auth/register',
@@ -316,5 +316,13 @@ export function LoginForm({
         </p>
       </motion.div>
     </motion.div>
+  );
+}
+
+export function LoginForm(props: LoginFormProps) {
+  return (
+    <Suspense fallback={<div className="flex h-[400px] w-full items-center justify-center text-muted-foreground text-sm">Loading...</div>}>
+      <LoginFormInner {...props} />
+    </Suspense>
   );
 }
