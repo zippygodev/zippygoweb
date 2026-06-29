@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,114 +24,40 @@ import {
   Star,
   Clock,
   MapPin,
-  Phone,
-  Clock3,
   Plus,
   Minus,
   ShoppingCart,
   ChevronLeft,
   Info,
   MessageSquare,
+  Clock3,
 } from 'lucide-react';
+import { getRestaurantBySlug } from '@/actions/customer/restaurants';
+import toast from 'react-hot-toast';
 
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  variants: string[];
-  popular: boolean;
-}
-
-interface Review {
-  id: string;
-  user: string;
-  avatar: string;
-  rating: number;
-  comment: string;
-  date: string;
-}
-
-const restaurants: Record<string, {
-  id: string;
-  name: string;
-  cuisine: string;
-  rating: number;
-  deliveryTime: number;
-  minOrder: number;
-  coverImage: string;
-  logo: string;
-  openingHours: string;
-  location: string;
-  phone: string;
-  categories: string[];
-  menuItems: MenuItem[];
-  reviews: Review[];
-}> = {
-  '1': {
-    id: '1',
-    name: 'Pizza Palace',
-    cuisine: 'Italian • Pizza',
-    rating: 4.8,
-    deliveryTime: 25,
-    minOrder: 199,
-    coverImage: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop',
-    logo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop',
-    openingHours: '10:00 AM - 11:00 PM',
-    location: 'Food Court, Level 2, Stall 12',
-    phone: '+91 98765 43210',
-    categories: ['Pizzas', 'Pastas', 'Sides', 'Beverages'],
-    menuItems: [
-      { id: 'm1', name: 'Margherita Pizza', description: 'Fresh mozzarella, tomato sauce, basil on classic crust', price: 349, image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300&h=300&fit=crop', category: 'Pizzas', variants: ['Regular', 'Large', 'Extra Large'], popular: true },
-      { id: 'm2', name: 'Pepperoni Pizza', description: 'Classic pepperoni with mozzarella and signature sauce', price: 449, image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=300&h=300&fit=crop', category: 'Pizzas', variants: ['Regular', 'Large', 'Extra Large'], popular: true },
-      { id: 'm3', name: 'BBQ Chicken Pizza', description: 'Grilled chicken, BBQ sauce, red onions, cilantro', price: 499, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=300&fit=crop', category: 'Pizzas', variants: ['Regular', 'Large'], popular: false },
-      { id: 'm4', name: 'Penne Arrabbiata', description: 'Penne in spicy tomato sauce with garlic and chili', price: 299, image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=300&h=300&fit=crop', category: 'Pastas', variants: ['Regular', 'Large'], popular: false },
-      { id: 'm5', name: 'Spaghetti Carbonara', description: 'Creamy egg sauce, pancetta, parmesan, black pepper', price: 379, image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=300&h=300&fit=crop', category: 'Pastas', variants: ['Regular', 'Large'], popular: true },
-      { id: 'm6', name: 'Garlic Breadsticks', description: 'Crispy breadsticks with garlic butter and herbs', price: 149, image: 'https://images.unsplash.com/photo-1619535860434-ba1d8fa125d2?w=300&h=300&fit=crop', category: 'Sides', variants: ['4 Pcs', '8 Pcs'], popular: false },
-      { id: 'm7', name: 'Coke (500ml)', description: 'Chilled Coca-Cola', price: 59, image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=300&h=300&fit=crop', category: 'Beverages', variants: ['Regular'], popular: false },
-    ],
-    reviews: [
-      { id: 'r1', user: 'Rahul S.', avatar: '', rating: 5, comment: 'Best pizza in town! The crust is perfectly crispy and the toppings are generous.', date: '2 days ago' },
-      { id: 'r2', user: 'Priya M.', avatar: '', rating: 4, comment: 'Great pasta, loved the carbonara. Delivery was quick too!', date: '1 week ago' },
-      { id: 'r3', user: 'Amit K.', avatar: '', rating: 5, comment: 'The BBQ chicken pizza is a must try! Will order again.', date: '2 weeks ago' },
-    ],
-  },
-  '2': {
-    id: '2',
-    name: 'Sushi Master',
-    cuisine: 'Japanese • Sushi',
-    rating: 4.7,
-    deliveryTime: 30,
-    minOrder: 299,
-    coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&h=400&fit=crop',
-    logo: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=200&h=200&fit=crop',
-    openingHours: '11:00 AM - 10:30 PM',
-    location: 'Food Court, Level 1, Stall 5',
-    phone: '+91 98765 43211',
-    categories: ['Sushi Rolls', 'Sashimi', 'Appetizers', 'Drinks'],
-    menuItems: [
-      { id: 'm8', name: 'California Roll', description: 'Crab, avocado, cucumber, masago', price: 449, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=300&h=300&fit=crop', category: 'Sushi Rolls', variants: ['6 Pcs', '12 Pcs'], popular: true },
-      { id: 'm9', name: 'Salmon Nigiri', description: 'Fresh Atlantic salmon over seasoned rice', price: 399, image: 'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=300&h=300&fit=crop', category: 'Sashimi', variants: ['2 Pcs', '4 Pcs'], popular: true },
-      { id: 'm10', name: 'Edamame', description: 'Steamed soy beans with sea salt', price: 199, image: 'https://images.unsplash.com/photo-1564093497595-593b96d80571?w=300&h=300&fit=crop', category: 'Appetizers', variants: ['Regular'], popular: false },
-    ],
-    reviews: [
-      { id: 'r4', user: 'Neha G.', avatar: '', rating: 5, comment: 'Authentic Japanese flavors! The salmon was incredibly fresh.', date: '3 days ago' },
-      { id: 'r5', user: 'Vikram P.', avatar: '', rating: 4, comment: 'Great sushi, generous portions. Highly recommend the California roll.', date: '5 days ago' },
-    ],
-  },
-};
-
-function ItemCard({ item, onAdd }: { item: MenuItem; onAdd: (variant: string, quantity: number) => void }) {
+function ItemCard({
+  item,
+  restaurantId,
+  restaurantName,
+  onAdd,
+}: {
+  item: any;
+  restaurantId: string;
+  restaurantName: string;
+  onAdd: (variant: any, quantity: number) => void;
+}) {
   const [showDialog, setShowDialog] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(item.variants[0] ?? '');
+  const variants = item.variants || [];
+  const [selectedVariant, setSelectedVariant] = useState<any>(variants[0] || null);
   const [quantity, setQuantity] = useState(1);
+
+  const price = selectedVariant ? Number(selectedVariant.price) : Number(item.price);
 
   const handleAdd = () => {
     onAdd(selectedVariant, quantity);
     setShowDialog(false);
     setQuantity(1);
+    toast.success(`${item.name} added to cart!`);
   };
 
   return (
@@ -141,19 +67,25 @@ function ItemCard({ item, onAdd }: { item: MenuItem; onAdd: (variant: string, qu
         onClick={() => setShowDialog(true)}
         className="flex w-full gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition-shadow hover:shadow-md"
       >
-        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
+          {item.imageUrl && (
+            <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between">
           <div>
             <div className="flex items-center gap-1.5">
               <h4 className="truncate text-sm font-semibold">{item.name}</h4>
-              {item.popular && <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Popular</Badge>}
+              {item.isVegetarian && (
+                <span className="h-3 w-3 rounded-full border border-green-600 bg-white p-0.5 flex items-center justify-center">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+                </span>
+              )}
             </div>
             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{item.description}</p>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-primary">{formatCurrency(item.price)}</span>
+            <span className="text-sm font-bold text-primary">{formatCurrency(Number(item.price))}</span>
             <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
               <Plus className="h-3 w-3" /> Add
             </span>
@@ -163,8 +95,10 @@ function ItemCard({ item, onAdd }: { item: MenuItem; onAdd: (variant: string, qu
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-sm rounded-2xl p-0">
-          <div className="overflow-hidden rounded-t-2xl">
-            <img src={item.image} alt={item.name} className="h-48 w-full object-cover" />
+          <div className="overflow-hidden rounded-t-2xl bg-muted">
+            {item.imageUrl && (
+              <img src={item.imageUrl} alt={item.name} className="h-48 w-full object-cover" />
+            )}
           </div>
           <div className="space-y-4 p-5">
             <DialogHeader className="space-y-1 p-0 text-left">
@@ -172,39 +106,41 @@ function ItemCard({ item, onAdd }: { item: MenuItem; onAdd: (variant: string, qu
               <DialogDescription className="text-sm">{item.description}</DialogDescription>
             </DialogHeader>
 
-            <div>
-              <p className="mb-2 text-sm font-medium">Size / Variant</p>
-              <div className="flex gap-2">
-                {item.variants.map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setSelectedVariant(v)}
-                    className={cn(
-                      'rounded-lg border px-3.5 py-2 text-xs font-medium transition-all',
-                      selectedVariant === v
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-muted-foreground/20 bg-muted text-muted-foreground hover:border-muted-foreground/40'
-                    )}
-                  >
-                    {v}
-                  </button>
-                ))}
+            {variants.length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-medium">Size / Variant</p>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((v: any) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariant(v)}
+                      className={cn(
+                        'rounded-lg border px-3.5 py-2 text-xs font-medium transition-all',
+                        selectedVariant?.id === v.id
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-muted-foreground/20 bg-muted text-muted-foreground hover:border-muted-foreground/40'
+                      )}
+                    >
+                      {v.name} (+₹{Number(v.price) - Number(item.price)})
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <p className="mb-2 text-sm font-medium">Quantity</p>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
                 <span className="w-8 text-center text-lg font-semibold">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -215,7 +151,7 @@ function ItemCard({ item, onAdd }: { item: MenuItem; onAdd: (variant: string, qu
 
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-primary">
-                {formatCurrency(item.price * quantity)}
+                {formatCurrency(price * quantity)}
               </span>
               <Button onClick={handleAdd} className="rounded-xl px-6">
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -268,14 +204,25 @@ export default function RestaurantDetailPage() {
   const router = useRouter();
   const { addItem } = useCart();
   const [loading, setLoading] = useState(true);
+  const [restaurant, setRestaurant] = useState<any>(null);
 
   const slug = params['slug'] as string;
-  const restaurant = restaurants[slug];
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchRestaurant = async () => {
+      try {
+        const res = await getRestaurantBySlug(slug);
+        if (res.success && res.data) {
+          setRestaurant(res.data);
+        }
+      } catch (err) {
+        console.error('Error fetching restaurant:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (slug) fetchRestaurant();
+  }, [slug]);
 
   if (loading) return <RestaurantSkeleton />;
 
@@ -291,20 +238,19 @@ export default function RestaurantDetailPage() {
     );
   }
 
-  const groupedItems = restaurant.categories.map((cat) => ({
-    category: cat,
-    items: restaurant.menuItems.filter((i) => i.category === cat),
-  }));
+  const activeCategories = restaurant.categories || [];
 
   return (
     <div className="pb-8">
       {/* Cover Image */}
-      <div className="relative h-56 overflow-hidden">
-        <img
-          src={restaurant.coverImage}
-          alt={restaurant.name}
-          className="h-full w-full object-cover"
-        />
+      <div className="relative h-56 overflow-hidden bg-muted">
+        {restaurant.coverImageUrl && (
+          <img
+            src={restaurant.coverImageUrl}
+            alt={restaurant.name}
+            className="h-full w-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <button
           onClick={() => router.back()}
@@ -315,12 +261,12 @@ export default function RestaurantDetailPage() {
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <div className="flex items-end gap-3">
             <Avatar className="h-14 w-14 border-2 border-white/50 ring-2 ring-white/20">
-              <AvatarImage src={restaurant.logo} />
-              <AvatarFallback className="text-lg">{restaurant.name[0]}</AvatarFallback>
+              <AvatarImage src={restaurant.logoUrl || ''} />
+              <AvatarFallback className="text-lg bg-primary text-white">{restaurant.name[0]}</AvatarFallback>
             </Avatar>
             <div className="flex-1 text-white">
               <h1 className="text-xl font-bold">{restaurant.name}</h1>
-              <p className="text-sm text-white/80">{restaurant.cuisine}</p>
+              <p className="text-sm text-white/80">{restaurant.cuisineType || 'Cuisine'}</p>
             </div>
           </div>
         </div>
@@ -337,7 +283,7 @@ export default function RestaurantDetailPage() {
           <span>{formatTime(restaurant.deliveryTime)}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          Min. <span className="font-medium text-primary">₹{restaurant.minOrder}</span>
+          Min. <span className="font-medium text-primary">₹{Number(restaurant.minOrderAmount)}</span>
         </div>
       </div>
 
@@ -345,92 +291,102 @@ export default function RestaurantDetailPage() {
       <div className="mx-4 mt-4 flex items-center justify-between rounded-xl border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2">
           <Clock3 className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">{restaurant.openingHours}</span>
+          <span className="text-xs text-muted-foreground">{restaurant.openingTime} - {restaurant.closingTime}</span>
         </div>
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">{restaurant.location}</span>
+          <span className="text-xs text-muted-foreground truncate max-w-[150px]">{restaurant.address}</span>
         </div>
-        <button className="text-primary">
+        <button className="text-primary" onClick={() => toast.success(restaurant.description || '')}>
           <Info className="h-4 w-4" />
         </button>
       </div>
 
       {/* Menu Tabs */}
       <div className="mt-4 px-4">
-        <Tabs defaultValue={restaurant.categories[0]}>
-          <TabsList className="w-full overflow-x-auto scrollbar-hide">
-            {restaurant.categories.map((cat) => (
-              <TabsTrigger key={cat} value={cat} className="text-xs">
-                {cat}
-              </TabsTrigger>
+        {activeCategories.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No menu categories available.</p>
+        ) : (
+          <Tabs defaultValue={activeCategories[0]?.name}>
+            <TabsList className="w-full overflow-x-auto scrollbar-hide">
+              {activeCategories.map((cat: any) => (
+                <TabsTrigger key={cat.id} value={cat.name} className="text-xs">
+                  {cat.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {activeCategories.map((cat: any) => (
+              <TabsContent key={cat.id} value={cat.name} className="mt-3 space-y-3">
+                {(!cat.products || cat.products.length === 0) ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No items in this category</p>
+                ) : (
+                  cat.products.map((item: any) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      restaurantId={restaurant.id}
+                      restaurantName={restaurant.name}
+                      onAdd={(variant, quantity) => {
+                        addItem({
+                          restaurantId: restaurant.id,
+                          restaurantName: restaurant.name,
+                          menuItemId: item.id,
+                          name: item.name,
+                          image: item.imageUrl || '',
+                          variant: variant ? variant.name : 'Regular',
+                          price: variant ? Number(variant.price) : Number(item.price),
+                          quantity,
+                        });
+                      }}
+                    />
+                  ))
+                )}
+              </TabsContent>
             ))}
-          </TabsList>
-          {groupedItems.map((group) => (
-            <TabsContent key={group.category} value={group.category} className="mt-3 space-y-3">
-              {group.items.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No items in this category</p>
-              ) : (
-                group.items.map((item) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    onAdd={(variant, quantity) => {
-                      addItem({
-                        restaurantId: restaurant.id,
-                        restaurantName: restaurant.name,
-                        menuItemId: item.id,
-                        name: item.name,
-                        image: item.image,
-                        variant,
-                        price: item.price,
-                        quantity,
-                      });
-                    }}
-                  />
-                ))
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+          </Tabs>
+        )}
       </div>
 
       {/* Reviews */}
       <div className="mt-6 px-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">Reviews ({restaurant.reviews.length})</h3>
-          <Button variant="ghost" size="sm" className="text-xs text-primary">
+          <h3 className="text-base font-semibold">Reviews ({restaurant.reviews?.length || 0})</h3>
+          <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => toast.success('Reviews functionality connected.')}>
             <MessageSquare className="mr-1 h-3.5 w-3.5" /> Write a Review
           </Button>
         </div>
         <div className="space-y-3">
-          {restaurant.reviews.map((review) => (
-            <div key={review.id} className="rounded-xl border bg-card p-3 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs">{review.user[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{review.user}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            'h-3 w-3',
-                            i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'
-                          )}
-                        />
-                      ))}
+          {(!restaurant.reviews || restaurant.reviews.length === 0) ? (
+            <p className="text-xs text-muted-foreground text-center py-4">No reviews yet. Be the first to order and review!</p>
+          ) : (
+            restaurant.reviews.map((review: any) => (
+              <div key={review.id} className="rounded-xl border bg-card p-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-xs bg-muted text-muted-foreground">{getInitials(review.user?.name || 'U')}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{review.user?.name || 'User'}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              'h-3 w-3',
+                              i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">Just now</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{review.date}</span>
                   </div>
                 </div>
+                <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

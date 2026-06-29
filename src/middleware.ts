@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -38,17 +38,20 @@ export async function middleware(req: NextRequest) {
   const isProtected = PROTECTED_PATHS.some((p) => path.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
-  // Get session via NextAuth
-  const session = await auth();
+  // Get session token via Edge-compatible getToken
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  });
 
-  if (!session?.user) {
+  if (!token) {
     // Not logged in → redirect to login
     const loginUrl = new URL('/auth/login', req.url);
     loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = session.user.role as string;
+  const role = (token.role as string) || 'CUSTOMER';
   const allowedPaths = ROLE_ALLOWED_PATHS[role] || [];
   const isAllowed = allowedPaths.some((allowed) => path.startsWith(allowed));
 

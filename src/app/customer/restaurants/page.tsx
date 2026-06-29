@@ -21,6 +21,7 @@ import {
   X,
   Store,
 } from 'lucide-react';
+import { getActiveRestaurants } from '@/actions/customer/restaurants';
 
 const allCategories = [
   { id: 'all', name: 'All', emoji: '🔥' },
@@ -37,21 +38,6 @@ const allCategories = [
   { id: 'mexican', name: 'Mexican', emoji: '🌮' },
 ];
 
-const allRestaurants = [
-  { id: '1', name: 'Pizza Palace', cuisine: 'Italian • Pizza', rating: 4.8, deliveryTime: 25, minOrder: 199, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=250&fit=crop', categories: ['pizza', 'pasta'], distance: '0.3 km' },
-  { id: '2', name: 'Sushi Master', cuisine: 'Japanese • Sushi', rating: 4.7, deliveryTime: 30, minOrder: 299, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=250&fit=crop', categories: ['sushi'], distance: '0.5 km' },
-  { id: '3', name: 'Burger Barn', cuisine: 'American • Fast Food', rating: 4.5, deliveryTime: 20, minOrder: 149, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=250&fit=crop', categories: ['burger'], distance: '0.2 km' },
-  { id: '4', name: 'Tandoori Nights', cuisine: 'Indian • North Indian', rating: 4.6, deliveryTime: 35, minOrder: 249, image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=250&fit=crop', categories: ['indian'], distance: '0.8 km' },
-  { id: '5', name: 'Green Bowl', cuisine: 'Healthy • Salads', rating: 4.4, deliveryTime: 20, minOrder: 179, image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=250&fit=crop', categories: ['salad'], distance: '0.4 km' },
-  { id: '6', name: 'Noodle House', cuisine: 'Chinese • Asian', rating: 4.3, deliveryTime: 25, minOrder: 199, image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&h=250&fit=crop', categories: ['chinese', 'thai'], distance: '0.6 km' },
-  { id: '7', name: 'Sweet Tooth', cuisine: 'Desserts • Bakery', rating: 4.9, deliveryTime: 15, minOrder: 99, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=250&fit=crop', categories: ['dessert', 'drinks'], distance: '0.3 km' },
-  { id: '8', name: 'Pasta Paradiso', cuisine: 'Italian • Pasta', rating: 4.5, deliveryTime: 30, minOrder: 249, image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=250&fit=crop', categories: ['pasta', 'pizza'], distance: '0.7 km' },
-  { id: '9', name: 'Thai Fusion', cuisine: 'Thai • Asian', rating: 4.2, deliveryTime: 35, minOrder: 299, image: 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=400&h=250&fit=crop', categories: ['thai', 'chinese'], distance: '1.2 km' },
-  { id: '10', name: 'Mexican Grill', cuisine: 'Mexican • Tex-Mex', rating: 4.1, deliveryTime: 30, minOrder: 249, image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=250&fit=crop', categories: ['mexican'], distance: '1.0 km' },
-  { id: '11', name: 'Bubble Tea Co', cuisine: 'Beverages • Desserts', rating: 4.3, deliveryTime: 10, minOrder: 79, image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=250&fit=crop', categories: ['drinks', 'dessert'], distance: '0.1 km' },
-  { id: '12', name: 'Spice Route', cuisine: 'Indian • Fusion', rating: 4.6, deliveryTime: 40, minOrder: 349, image: 'https://images.unsplash.com/photo-1601050690597-df0568f7095c?w=400&h=250&fit=crop', categories: ['indian'], distance: '1.5 km' },
-];
-
 type SortOption = 'rating' | 'deliveryTime' | 'minOrder';
 
 function RestaurantsPageInner() {
@@ -62,15 +48,28 @@ function RestaurantsPageInner() {
   const [sortBy, setSortBy] = useState<SortOption>('rating');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  const fetchRestaurants = async () => {
+    try {
+      const res = await getActiveRestaurants();
+      if (res.success && res.data) {
+        setRestaurants(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching restaurants:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
+    fetchRestaurants();
   }, []);
 
   useEffect(() => {
@@ -97,19 +96,27 @@ function RestaurantsPageInner() {
     return () => observerRef.current?.disconnect();
   }, [loadingMore, hasMore, page]);
 
-  const filtered = allRestaurants
+  const filtered = restaurants
     .filter((r) => {
-      if (selectedCategory !== 'all' && !r.categories.includes(selectedCategory)) return false;
+      if (selectedCategory !== 'all') {
+        const cat = selectedCategory.toLowerCase();
+        const cuisine = (r.cuisineType || '').toLowerCase();
+        const name = (r.name || '').toLowerCase();
+        if (!cuisine.includes(cat) && !name.includes(cat)) return false;
+      }
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        return r.name.toLowerCase().includes(q) || r.cuisine.toLowerCase().includes(q);
+        return (
+          (r.name || '').toLowerCase().includes(q) ||
+          (r.cuisineType || '').toLowerCase().includes(q)
+        );
       }
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'deliveryTime') return a.deliveryTime - b.deliveryTime;
-      return a.minOrder - b.minOrder;
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'deliveryTime') return (a.deliveryTime || 0) - (b.deliveryTime || 0);
+      return Number(a.minOrderAmount || 0) - Number(b.minOrderAmount || 0);
     });
 
   const displayed = filtered.slice(0, page * 6);
@@ -245,19 +252,19 @@ function RestaurantsPageInner() {
                   transition={{ delay: index * 0.03 }}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => router.push(`/customer/restaurants/${restaurant.id}`)}
+                  onClick={() => router.push(`/customer/restaurants/${restaurant.slug}`)}
                   className="group overflow-hidden rounded-xl border bg-card text-left shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="aspect-[4/3] overflow-hidden">
                     <img
-                      src={restaurant.image}
+                      src={restaurant.coverImageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=250&fit=crop'}
                       alt={restaurant.name}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                   <div className="space-y-1.5 p-3">
                     <h3 className="truncate text-sm font-semibold">{restaurant.name}</h3>
-                    <p className="truncate text-xs text-muted-foreground">{restaurant.cuisine}</p>
+                    <p className="truncate text-xs text-muted-foreground">{restaurant.cuisineType || 'Cuisine'}</p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -267,7 +274,7 @@ function RestaurantsPageInner() {
                         <Clock className="h-3 w-3" />
                         {formatTime(restaurant.deliveryTime)}
                       </span>
-                      <span className="text-primary">₹{restaurant.minOrder}+</span>
+                      <span className="text-primary">₹{Number(restaurant.minOrderAmount)}+</span>
                     </div>
                   </div>
                 </motion.button>

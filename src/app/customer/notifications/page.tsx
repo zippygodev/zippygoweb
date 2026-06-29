@@ -10,32 +10,31 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useNotifications } from '../CustomerLayoutClient';
 import {
   Bell,
-  BellRing,
   ShoppingBag,
-  Gift,
   Megaphone,
   CheckCheck,
-  ChevronRight,
-  Clock,
-  Package,
   Percent,
+  CreditCard,
+  Bike,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 const notificationIcons: Record<string, typeof Bell> = {
-  order: ShoppingBag,
-  promo: Gift,
-  update: Megaphone,
+  ORDER_UPDATE: ShoppingBag,
+  PROMOTION: Percent,
+  PAYMENT: CreditCard,
+  SYSTEM: Megaphone,
+  DELIVERY: Bike,
 };
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications } = useNotifications();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    refreshNotifications().then(() => setLoading(false));
+  }, [refreshNotifications]);
 
   if (loading) {
     return (
@@ -58,7 +57,7 @@ export default function NotificationsPage() {
     return (
       <div className="px-4 pt-8">
         <EmptyState
-          icon={<Bell className="h-12 w-12" />}
+          icon={<Bell className="h-12 w-12 text-muted-foreground" />}
           title="No notifications"
           description="You're all caught up! Check back later for updates."
         />
@@ -67,8 +66,8 @@ export default function NotificationsPage() {
   }
 
   const sorted = [...notifications].sort((a, b) => {
-    if (a.read !== b.read) return a.read ? 1 : -1;
-    return 0;
+    if (a.isRead !== b.isRead) return a.isRead ? 1 : -1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   return (
@@ -90,57 +89,50 @@ export default function NotificationsPage() {
       )}
 
       {/* Notification List */}
-      <div className="mt-2 space-y-1 px-4">
+      <div className="mt-2 space-y-2 px-4">
         {sorted.map((notification, i) => {
           const Icon = notificationIcons[notification.type] || Bell;
           return (
-            <motion.button
+            <motion.div
               key={notification.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => markAsRead(notification.id)}
               className={cn(
-                'flex w-full items-start gap-3 rounded-xl p-3 text-left transition-all',
-                notification.read
-                  ? 'bg-card'
-                  : 'bg-primary/[0.03] shadow-sm ring-1 ring-primary/10'
+                'flex items-start gap-3 rounded-xl border p-4 shadow-sm transition-colors text-left w-full bg-card',
+                !notification.isRead && 'border-primary/20 bg-primary/5 ring-1 ring-primary/5'
               )}
             >
               <div
                 className={cn(
-                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                  notification.read ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                  notification.isRead ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'
                 )}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p
-                      className={cn(
-                        'truncate text-sm',
-                        notification.read ? 'text-foreground' : 'font-semibold text-foreground'
-                      )}
-                    >
-                      {notification.title}
-                    </p>
-                  </div>
-                  {!notification.read && (
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  )}
+                  <h3 className={cn('text-sm font-semibold truncate', !notification.isRead && 'text-primary')}>
+                    {notification.title}
+                  </h3>
+                  <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
+                    {formatDate(notification.createdAt, 'relative')}
+                  </span>
                 </div>
-                <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                   {notification.message}
                 </p>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 text-muted-foreground/60" />
-                  <span className="text-xs text-muted-foreground/60">{notification.time}</span>
-                </div>
+                {!notification.isRead && (
+                  <button
+                    onClick={() => markAsRead(notification.id)}
+                    className="mt-2 text-[10px] font-semibold text-primary hover:underline"
+                  >
+                    Mark as read
+                  </button>
+                )}
               </div>
-            </motion.button>
+            </motion.div>
           );
         })}
       </div>

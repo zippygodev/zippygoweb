@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatCurrency, generateOrderNumber } from '@/lib/utils';
@@ -17,17 +18,15 @@ import { useCart } from '../CustomerLayoutClient';
 import {
   CreditCard,
   Banknote,
-  MapPin,
   Phone,
   Mail,
   User,
   Building2,
   Store,
   Check,
-  AlertCircle,
-  ChevronRight,
-  ShieldCheck,
 } from 'lucide-react';
+import { placeOrder } from '@/actions/customer/orders';
+import toast from 'react-hot-toast';
 
 type PaymentMethod = 'razorpay' | 'cod';
 
@@ -47,17 +46,30 @@ const initialForm: FormData = {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { items, subtotal, clearCart } = useCart();
   const [form, setForm] = useState<FormData>(initialForm);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   const deliveryFee = 0;
   const tax = subtotal * 0.05;
+  const discount = 0;
   const total = subtotal + deliveryFee + tax;
+
+  useEffect(() => {
+    if (session?.user) {
+      setForm((prev) => ({
+        ...prev,
+        name: session.user.name || '',
+        email: session.user.email || '',
+      }));
+    }
+  }, [session]);
 
   useEffect(() => {
     if (items.length === 0 && !success) {
@@ -80,14 +92,43 @@ export default function CheckoutPage() {
     if (!validate()) return;
     setProcessing(true);
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const firstItem = items[0];
+      if (!firstItem) throw new Error('Cart is empty');
 
-    const orderNum = generateOrderNumber();
-    setOrderNumber(orderNum);
-    setSuccess(true);
-    setProcessing(false);
-    clearCart();
+      const res = await placeOrder({
+        restaurantId: firstItem.restaurantId,
+        deliveryType: 'PICKUP',
+        notes: form.notes,
+        paymentMethod: paymentMethod === 'razorpay' ? 'RAZORPAY' : 'COD',
+        items: items.map((item) => ({
+          productId: item.menuItemId,
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          variantName: item.variant,
+        })),
+        subtotal,
+        tax,
+        deliveryFee,
+        discount,
+        total,
+      });
+
+      if (res.success && res.data) {
+        setOrderNumber(res.data.orderNumber);
+        setOrderId(res.data.id);
+        setSuccess(true);
+        clearCart();
+        toast.success('Order placed successfully!');
+      } else {
+        toast.error(res.error || 'Failed to place order');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred while placing order');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (success) {
@@ -112,7 +153,7 @@ export default function CheckoutPage() {
           <Button
             variant="outline"
             className="flex-1 rounded-xl"
-            onClick={() => router.push(`/customer/orders/${orderNumber}`)}
+            onClick={() => router.push(`/customer/orders/${orderId}`)}
           >
             Track Order
           </Button>
@@ -130,14 +171,12 @@ export default function CheckoutPage() {
   if (items.length === 0) return null;
 
   const groupedItems = items.reduce((acc: any, item: any) => {
-      if (!acc[item.restaurantId]) {
-        acc[item.restaurantId] = { restaurantName: item.restaurantName, items: [] };
-      }
-      acc[item.restaurantId]!.items.push(item);
-      return acc;
-    },
-    {} as Record<string, { restaurantName: string; items: typeof items }>
-  );
+    if (!acc[item.restaurantId]) {
+      acc[item.restaurantId] = { restaurantName: item.restaurantName, items: [] };
+    }
+    acc[item.restaurantId]!.items.push(item);
+    return acc;
+  }, {} as Record<string, { restaurantName: string; items: typeof items }>);
 
   return (
     <div className="pb-8">
@@ -185,7 +224,7 @@ export default function CheckoutPage() {
           <div className="flex items-start gap-2">
             <Building2 className="mt-2 h-4 w-4 text-muted-foreground" />
             <Textarea
-              placeholder="Special instructions or delivery notes..."
+              placeholder="Special instructions or notes..."
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="min-h-[60px] border-none bg-muted/50 pl-0 text-sm resize-none"
@@ -207,8 +246,10 @@ export default function CheckoutPage() {
               <div className="divide-y">
                 {(group as any).items.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      {item.image && (
+                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                      )}
                     </div>
                     <div className="flex min-w-0 flex-1 items-center justify-between">
                       <div className="min-w-0">
@@ -285,16 +326,16 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span className="text-green-600">FREE</span>
+              <span className="text-green-600 font-semibold">FREE</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax (5%)</span>
               <span>{formatCurrency(tax)}</span>
             </div>
             <Separator />
-            <div className="flex justify-between font-medium pt-2 border-t">
-              <span>Total</span>
-              <span>{formatCurrency(subtotal + 49 + 15 + (subtotal * 0.05))}</span>
+            <div className="flex justify-between font-bold pt-2 border-t text-primary">
+              <span>Total Amount</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
         </div>

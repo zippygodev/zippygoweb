@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useSession, signOut } from 'next-auth/react';
@@ -22,7 +22,6 @@ import {
   Bell,
   LogOut,
   ChevronRight,
-  Settings,
   Sun,
   Moon,
   Shield,
@@ -32,17 +31,10 @@ import {
   Plus,
   Home,
   Briefcase,
-  Star,
   Trash2,
 } from 'lucide-react';
-
-interface Address {
-  id: string;
-  label: string;
-  address: string;
-  type: 'home' | 'work' | 'other';
-  isDefault: boolean;
-}
+import { getMyAddresses, deleteAddress } from '@/actions/customer/profile';
+import toast from 'react-hot-toast';
 
 interface PaymentCard {
   id: string;
@@ -50,11 +42,6 @@ interface PaymentCard {
   last4: string;
   isDefault: boolean;
 }
-
-const addresses: Address[] = [
-  { id: 'a1', label: 'Home', address: '123, MG Road, Indiranagar, Bangalore - 560038', type: 'home', isDefault: true },
-  { id: 'a2', label: 'Work', address: '456, Brigade Road, Koramangala, Bangalore - 560034', type: 'work', isDefault: false },
-];
 
 const paymentCards: PaymentCard[] = [
   { id: 'c1', type: 'visa', last4: '4242', isDefault: true },
@@ -66,14 +53,48 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(session?.user?.name || 'Guest User');
-  const [email, setEmail] = useState(session?.user?.email || '');
+  const [name, setName] = useState('Guest User');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('+91 98765 43210');
+  const [addresses, setAddresses] = useState<any[]>([]);
   const isDark = theme === 'dark';
 
+  const fetchAddresses = async () => {
+    try {
+      const res = await getMyAddresses();
+      if (res.success && res.data) {
+        setAddresses(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching addresses:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      setName(session.user.name || 'Guest User');
+      setEmail(session.user.email || '');
+      fetchAddresses();
+    }
+  }, [session]);
+
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      const res = await deleteAddress(id);
+      if (res.success) {
+        toast.success('Address deleted successfully!');
+        fetchAddresses();
+      } else {
+        toast.error(res.error || 'Failed to delete address');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred');
+    }
+  };
+
   const menuItems = [
-    { icon: Heart, label: 'Favorites', href: '/customer/favorites', badge: '12' },
-    { icon: MessageSquare, label: 'My Reviews', href: '/customer/reviews', badge: '8' },
+    { icon: Heart, label: 'Favorites', href: '/customer/favorites' },
+    { icon: MessageSquare, label: 'My Reviews', href: '/customer/reviews' },
     { icon: Bell, label: 'Notifications', href: '/customer/notifications' },
     { icon: Shield, label: 'Privacy & Security', href: '#' },
     { icon: HelpCircle, label: 'Help & Support', href: '/customer/support' },
@@ -86,9 +107,9 @@ export default function ProfilePage() {
       <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background px-4 pt-6 pb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-primary/20 ring-2 ring-primary/10">
+            <Avatar className="h-16 w-16 border-2 border-primary/20 ring-2 ring-primary/10 bg-muted">
               <AvatarImage src={session?.user?.image || ''} />
-              <AvatarFallback className="text-lg">{getInitials(name || 'U')}</AvatarFallback>
+              <AvatarFallback className="text-lg bg-primary text-white">{getInitials(name || 'U')}</AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-xl font-bold">{name}</h1>
@@ -106,12 +127,12 @@ export default function ProfilePage() {
         {/* Stats */}
         <div className="mt-6 grid grid-cols-3 gap-3">
           {[
-            { label: 'Orders', value: '24' },
-            { label: 'Favorites', value: '12' },
-            { label: 'Reviews', value: '8' },
+            { label: 'Orders', value: 'Active' },
+            { label: 'Favorites', value: 'Saved' },
+            { label: 'Support', value: 'Help' },
           ].map((stat) => (
             <div key={stat.label} className="rounded-xl bg-card/80 py-3 text-center shadow-sm backdrop-blur-sm">
-              <p className="text-lg font-bold text-primary">{stat.value}</p>
+              <p className="text-sm font-bold text-primary">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
             </div>
           ))}
@@ -134,7 +155,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Email</label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" disabled />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Phone</label>
@@ -152,31 +173,35 @@ export default function ProfilePage() {
       <div className="mx-4 mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Saved Addresses</h2>
-          <button className="flex items-center gap-1 text-xs font-medium text-primary">
+          <button className="flex items-center gap-1 text-xs font-medium text-primary" onClick={() => toast.success('Address addition connection details placeholder')}>
             <Plus className="h-3.5 w-3.5" /> Add New
           </button>
         </div>
         <div className="space-y-2">
-          {addresses.map((addr) => {
-            const Icon = addr.type === 'home' ? Home : addr.type === 'work' ? Briefcase : MapPin;
-            return (
-              <div key={addr.id} className="flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{addr.label}</span>
-                    {addr.isDefault && <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Default</Badge>}
+          {addresses.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4 bg-card rounded-xl border border-dashed">No saved addresses found.</p>
+          ) : (
+            addresses.map((addr) => {
+              const Icon = addr.label?.toLowerCase() === 'home' ? Home : addr.label?.toLowerCase() === 'work' ? Briefcase : MapPin;
+              return (
+                <div key={addr.id} className="flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{addr.address}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{addr.label}</span>
+                      {addr.isDefault && <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Default</Badge>}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{addr.address}</p>
+                  </div>
+                  <button onClick={() => handleDeleteAddress(addr.id)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <button className="shrink-0 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -184,7 +209,7 @@ export default function ProfilePage() {
       <div className="mx-4 mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Payment Methods</h2>
-          <button className="flex items-center gap-1 text-xs font-medium text-primary">
+          <button className="flex items-center gap-1 text-xs font-medium text-primary" onClick={() => toast.success('Payment options placeholder')}>
             <Plus className="h-3.5 w-3.5" /> Add New
           </button>
         </div>
@@ -231,12 +256,7 @@ export default function ProfilePage() {
                     <Icon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">{item.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {'badge' in item && item.badge && (
-                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{item.badge}</Badge>
-                    )}
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               );
             })}

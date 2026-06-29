@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, useRef, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,60 +17,14 @@ import {
   Bell,
   MapPin,
   ChevronDown,
-  Menu,
   X,
-  Heart,
-  Star,
-  Clock,
-  Package,
-  Utensils,
-  Bot,
-  Plus,
-  Minus,
-  Trash2,
-  CreditCard,
-  Banknote,
-  MapPinned,
-  LogOut,
-  Settings,
-  Gift,
-  Ticket,
-  Bike,
-  ChefHat,
   ArrowLeft,
-  Sparkles,
-  TrendingUp,
-  Flame,
-  CheckCircle,
-  CircleDashed,
-  AlertCircle,
-  Timer,
-  Phone,
-  Mail,
-  PenLine,
-  ChevronRight,
-  MessageSquare,
-  ThumbsUp,
-  Share2,
-  QrCode,
-  RefreshCw,
-  ExternalLink,
-  Store,
-  Tag,
-  Percent,
-  Receipt,
-  Split,
-  Eye,
-  EyeOff,
-  Sun,
-  Moon,
-  Crown,
-  Wallet,
-  Building2,
-  Copy,
-  Check,
-  Loader2,
 } from 'lucide-react';
+import {
+  getMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '@/actions/customer/notifications';
 
 interface CartItem {
   id: string;
@@ -109,16 +62,17 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  read: boolean;
-  time: string;
-  type: 'order' | 'promo' | 'update';
+  isRead: boolean;
+  createdAt: Date;
+  type: string;
 }
 
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -135,14 +89,6 @@ const navItems = [
   { href: '/customer/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/customer/orders', label: 'Orders', icon: ClipboardList },
   { href: '/customer/profile', label: 'Profile', icon: User },
-];
-
-const initialNotifications: Notification[] = [
-  { id: '1', title: 'Order Confirmed', message: 'Your order #ZG-2A3B-4C5D has been confirmed.', read: false, time: '5m ago', type: 'order' },
-  { id: '2', title: '50% Off Weekend Special', message: 'Get 50% off on all pizzas this weekend!', read: false, time: '1h ago', type: 'promo' },
-  { id: '3', title: 'Order Delivered', message: 'Your order from Pizza Palace has been delivered.', read: true, time: '2h ago', type: 'order' },
-  { id: '4', title: 'New Restaurant Added', message: 'Sushi Master is now available in your area.', read: false, time: '1d ago', type: 'update' },
-  { id: '5', title: 'Free Delivery', message: 'Free delivery on orders above ₹299.', read: true, time: '2d ago', type: 'promo' },
 ];
 
 function BottomNav() {
@@ -188,7 +134,7 @@ function Header() {
   const { unreadCount } = useNotifications();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('Food Court, Level 2');
+  const [location] = useState('Food Court, Level 2');
 
   const isHome = pathname === '/customer';
   const showBack = !isHome && pathname !== '/customer/restaurants';
@@ -277,8 +223,25 @@ function Header() {
 }
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
   const [items, setItems] = useState<CartItem[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const refreshNotifications = useCallback(async () => {
+    if (!session?.user) return;
+    try {
+      const res = await getMyNotifications();
+      if (res.success && res.data) {
+        setNotifications(res.data as any[]);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    refreshNotifications();
+  }, [refreshNotifications]);
 
   const addItem = useCallback((newItem: Omit<CartItem, 'id' | 'specialInstructions'>) => {
     setItems((prev) => {
@@ -315,19 +278,21 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  }, []);
+  const markAsRead = useCallback(async (id: string) => {
+    await markNotificationRead(id);
+    refreshNotifications();
+  }, [refreshNotifications]);
 
-  const markAllAsRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+  const markAllAsRead = useCallback(async () => {
+    await markAllNotificationsRead();
+    refreshNotifications();
+  }, [refreshNotifications]);
 
   return (
     <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, updateInstructions, clearCart, itemCount, subtotal }}>
-      <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead }}>
+      <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications }}>
         <div className="mx-auto min-h-screen max-w-lg bg-background pb-20">
           <Header />
           <main>{children}</main>

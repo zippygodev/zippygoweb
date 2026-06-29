@@ -13,7 +13,6 @@ import {
   ClipboardList,
   RefreshCw,
   ChevronRight,
-  Store,
   Bike,
   Utensils,
   Clock,
@@ -21,95 +20,7 @@ import {
   CheckCircle2,
   CookingPot,
 } from 'lucide-react';
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  restaurant: string;
-  restaurantLogo: string;
-  items: { name: string; quantity: number; price: number }[];
-  total: number;
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
-  type: 'PICKUP' | 'TABLE' | 'ROBOT';
-  date: string;
-  tableNumber?: string;
-}
-
-const orders: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'ZG-2A3B-4C5D',
-    restaurant: 'Pizza Palace',
-    restaurantLogo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=100&h=100&fit=crop',
-    items: [
-      { name: 'Margherita Pizza', quantity: 2, price: 349 },
-      { name: 'Garlic Breadsticks', quantity: 1, price: 149 },
-    ],
-    total: 889.55,
-    status: 'PREPARING',
-    type: 'TABLE',
-    date: '2024-03-15T18:30:00Z',
-    tableNumber: '12',
-  },
-  {
-    id: '2',
-    orderNumber: 'ZG-4E5F-6G7H',
-    restaurant: 'Sushi Master',
-    restaurantLogo: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=100&h=100&fit=crop',
-    items: [
-      { name: 'California Roll', quantity: 1, price: 449 },
-      { name: 'Salmon Nigiri', quantity: 2, price: 399 },
-    ],
-    total: 1310.85,
-    status: 'DELIVERED',
-    type: 'PICKUP',
-    date: '2024-03-14T13:00:00Z',
-  },
-  {
-    id: '3',
-    orderNumber: 'ZG-8I9J-0K1L',
-    restaurant: 'Burger Barn',
-    restaurantLogo: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=100&h=100&fit=crop',
-    items: [
-      { name: 'Double Cheeseburger', quantity: 1, price: 249 },
-      { name: 'French Fries', quantity: 1, price: 99 },
-      { name: 'Coke', quantity: 2, price: 59 },
-    ],
-    total: 487.15,
-    status: 'CANCELLED',
-    type: 'ROBOT',
-    date: '2024-03-13T19:45:00Z',
-  },
-  {
-    id: '4',
-    orderNumber: 'ZG-2M3N-4O5P',
-    restaurant: 'Sweet Tooth',
-    restaurantLogo: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=100&h=100&fit=crop',
-    items: [
-      { name: 'Chocolate Lava Cake', quantity: 2, price: 199 },
-    ],
-    total: 417.9,
-    status: 'DELIVERED',
-    type: 'PICKUP',
-    date: '2024-03-12T15:20:00Z',
-  },
-  {
-    id: '5',
-    orderNumber: 'ZG-6Q7R-8S9T',
-    restaurant: 'Tandoori Nights',
-    restaurantLogo: 'https://images.unsplash.com/photo-1601050690597-df0568f7095c?w=100&h=100&fit=crop',
-    items: [
-      { name: 'Butter Chicken', quantity: 1, price: 399 },
-      { name: 'Naan', quantity: 3, price: 49 },
-      { name: 'Biryani', quantity: 1, price: 299 },
-    ],
-    total: 841.55,
-    status: 'CONFIRMED',
-    type: 'TABLE',
-    date: '2024-03-15T20:00:00Z',
-    tableNumber: '5',
-  },
-];
+import { getMyOrders } from '@/actions/customer/orders';
 
 const statusIcons: Record<string, typeof CookingPot> = {
   PENDING: Clock,
@@ -121,7 +32,7 @@ const statusIcons: Record<string, typeof CookingPot> = {
   CANCELLED: Package,
 };
 
-function OrderCard({ order, index }: { order: Order; index: number }) {
+function OrderCard({ order, index }: { order: any; index: number }) {
   const router = useRouter();
   const StatusIcon = statusIcons[order.status] || Package;
 
@@ -136,14 +47,16 @@ function OrderCard({ order, index }: { order: Order; index: number }) {
     >
       <div className="p-4">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-            <img src={order.restaurantLogo} alt={order.restaurant} className="h-full w-full object-cover" />
+          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+            {order.restaurant?.logoUrl && (
+              <img src={order.restaurant.logoUrl} alt={order.restaurant.name} className="h-full w-full object-cover" />
+            )}
           </div>
           <div className="flex min-w-0 flex-1 items-center justify-between">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{order.restaurant}</p>
+              <p className="truncate text-sm font-semibold">{order.restaurant?.name || 'Restaurant'}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {order.items.map((i) => `${i.name} x${i.quantity}`).join(', ')}
+                {order.items.map((i: any) => `${i.productName} x${i.quantity}`).join(', ')}
               </p>
             </div>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -156,13 +69,13 @@ function OrderCard({ order, index }: { order: Order; index: number }) {
               <StatusIcon className="h-3 w-3" />
               {order.status.replace(/_/g, ' ')}
             </Badge>
-            {order.type === 'TABLE' && order.tableNumber && (
+            {order.deliveryType === 'TABLE' && order.tableNumber && (
               <Badge variant="outline" className="text-xs">Table {order.tableNumber}</Badge>
             )}
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold">{formatCurrency(order.total)}</p>
-            <p className="text-xs text-muted-foreground">{formatDate(order.date, 'short')}</p>
+            <p className="text-sm font-bold">{formatCurrency(Number(order.total))}</p>
+            <p className="text-xs text-muted-foreground">{formatDate(order.createdAt, 'short')}</p>
           </div>
         </div>
       </div>
@@ -174,20 +87,34 @@ export default function OrdersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
   const touchStart = useRef(0);
 
+  const fetchOrders = async () => {
+    try {
+      const res = await getMyOrders();
+      if (res.success && res.data) {
+        setOrders(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
+    fetchOrders();
   }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    fetchOrders();
   };
 
-  const activeOrders = orders.filter((o) => !['DELIVERED', 'CANCELLED'].includes(o.status));
-  const pastOrders = orders.filter((o) => ['DELIVERED', 'CANCELLED'].includes(o.status));
+  const activeOrders = orders.filter((o) => !['DELIVERED', 'CANCELLED', 'COMPLETED'].includes(o.status));
+  const pastOrders = orders.filter((o) => ['DELIVERED', 'CANCELLED', 'COMPLETED'].includes(o.status));
 
   if (loading) {
     return (
