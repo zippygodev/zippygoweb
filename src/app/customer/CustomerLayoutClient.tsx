@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, useRef, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

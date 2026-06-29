@@ -28,6 +28,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { getActiveRestaurants, getFeaturedProducts } from '@/actions/customer/restaurants';
+import toast from 'react-hot-toast';
 
 const categories = [
   { id: 'pizza', name: 'Pizza', emoji: '🍕', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop' },

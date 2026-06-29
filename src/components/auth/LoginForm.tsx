@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -139,7 +139,7 @@ function LoginFormInner({
       // ✅ Role validation: if this login page expects a specific role, enforce it
       if (expectedRole && userRole !== expectedRole) {
         // Sign the user back out — they used the wrong login portal
-        await fetch('/api/auth/signout', { method: 'POST' });
+        await signOut({ redirect: false });
         const correctLoginUrl = ROLE_LOGIN_URLS[userRole] || '/auth/login';
         setRoleError(
           `This account is registered as "${userRole.replace('_', ' ')}". Please use the correct login portal.`
