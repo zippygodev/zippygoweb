@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
@@ -15,6 +16,10 @@ export const loginSchema = z.object({
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credentials({
       name: 'credentials',
       credentials: {
@@ -59,13 +64,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        if (!user.email) return false;
+
+        // Find or create the user in the database
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (!dbUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || '',
+              avatarUrl: user.image || '',
+              emailVerified: true,
+              isActive: true,
+            },
+          });
+        }
+        return true;
+      }
+      return true; // allow credentials login
+    },
+    async jwt({ token, user, trigger, session, account }) {
       if (user) {
-        token.id = user.id as string;
-        token.role = user.role as any;
-        token.name = user.name as string;
-        token.email = user.email as string;
-        token.picture = user.image as string;
+        if (account?.provider === 'google') {
+          // For google login, we need to fetch the DB user to get the ID and role
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role as any;
+            token.name = dbUser.name as string;
+            token.email = dbUser.email as string;
+            token.picture = dbUser.avatarUrl as string;
+          }
+        } else {
+          // For credentials login, user already contains DB values
+          token.id = user.id as string;
+          token.role = user.role as any;
+          token.name = user.name as string;
+          token.email = user.email as string;
+          token.picture = user.image as string;
+        }
       }
       if (trigger === 'update' && session) {
         if (session.name) token.name = session.name;

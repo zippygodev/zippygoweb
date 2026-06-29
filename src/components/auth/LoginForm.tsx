@@ -173,23 +173,15 @@ function LoginFormInner({
 
       {/* Google OAuth */}
       <motion.div variants={itemVariants}>
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                className="relative w-full"
-                disabled
-              >
-                <Chrome className="mr-2 h-4 w-4" />
-                Continue with Google
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              Coming Soon
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="outline"
+          className="relative w-full"
+          type="button"
+          onClick={() => signIn('google', { callbackUrl })}
+        >
+          <Chrome className="mr-2 h-4 w-4" />
+          Continue with Google
+        </Button>
       </motion.div>
 
       {/* Divider */}
