@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
+import { useSession, signOut } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/utils';
+import { getInitials } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -61,11 +63,13 @@ const paymentCards: PaymentCard[] = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState('Rahul Sharma');
-  const [email, setEmail] = useState('rahul.sharma@email.com');
+  const [name, setName] = useState(session?.user?.name || 'Guest User');
+  const [email, setEmail] = useState(session?.user?.email || '');
   const [phone, setPhone] = useState('+91 98765 43210');
-  const [darkMode, setDarkMode] = useState(false);
+  const isDark = theme === 'dark';
 
   const menuItems = [
     { icon: Heart, label: 'Favorites', href: '/customer/favorites', badge: '12' },
@@ -83,8 +87,8 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border-2 border-primary/20 ring-2 ring-primary/10">
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop" />
-              <AvatarFallback className="text-lg">RS</AvatarFallback>
+              <AvatarImage src={session?.user?.image || ''} />
+              <AvatarFallback className="text-lg">{getInitials(name || 'U')}</AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-xl font-bold">{name}</h1>
@@ -210,10 +214,10 @@ export default function ProfilePage() {
             {/* Dark Mode Toggle */}
             <div className="flex items-center justify-between px-4 py-3.5">
               <div className="flex items-center gap-3">
-                <Sun className="h-4 w-4 text-muted-foreground" />
+                {isDark ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
                 <span className="text-sm">Dark Mode</span>
               </div>
-              <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+              <Switch checked={isDark} onCheckedChange={(v) => setTheme(v ? 'dark' : 'light')} />
             </div>
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -245,6 +249,7 @@ export default function ProfilePage() {
         <Button
           variant="outline"
           className="w-full rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
+          onClick={() => signOut({ callbackUrl: '/auth/login' })}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Log Out
