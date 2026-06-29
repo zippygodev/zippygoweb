@@ -6,6 +6,8 @@ export default function DeliveryLoginPage() {
       title="Delivery Partner Login"
       description="Sign in to start delivering"
       expectedRole="DELIVERY_PARTNER"
+      showGoogle={false}
+      registerLink=""
     />
   );
 }

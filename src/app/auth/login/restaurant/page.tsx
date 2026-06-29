@@ -6,6 +6,8 @@ export default function RestaurantLoginPage() {
       title="Restaurant Login"
       description="Sign in to manage your restaurant"
       expectedRole="RESTAURANT_OWNER"
+      showGoogle={false}
+      registerLink=""
     />
   );
 }

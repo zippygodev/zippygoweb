@@ -15,18 +15,13 @@ import {
   Lock,
   Chrome,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -43,6 +38,24 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+/** Map role → the dashboard it belongs to */
+const ROLE_DESTINATIONS: Record<string, string> = {
+  CUSTOMER: '/customer',
+  RESTAURANT_OWNER: '/dashboard/restaurant',
+  DELIVERY_PARTNER: '/dashboard/delivery',
+  MALL_ADMIN: '/dashboard/admin',
+  SUPER_ADMIN: '/dashboard/superadmin',
+};
+
+/** Map role → the login URL it belongs to (for wrong-role detection) */
+const ROLE_LOGIN_URLS: Record<string, string> = {
+  CUSTOMER: '/auth/login/customer',
+  RESTAURANT_OWNER: '/auth/login/restaurant',
+  DELIVERY_PARTNER: '/auth/login/delivery',
+  MALL_ADMIN: '/auth/login/mall',
+  SUPER_ADMIN: '/auth/login/superadmin',
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -69,18 +82,22 @@ interface LoginFormProps {
   description?: string;
   registerLink?: string;
   expectedRole?: 'CUSTOMER' | 'RESTAURANT_OWNER' | 'DELIVERY_PARTNER' | 'MALL_ADMIN' | 'SUPER_ADMIN';
+  /** Hide Google sign-in for admin/staff roles */
+  showGoogle?: boolean;
 }
 
 function LoginFormInner({
   title = 'Welcome back',
   description = 'Sign in to your Zippy Go account',
   registerLink = '/auth/register',
-  expectedRole
+  expectedRole,
+  showGoogle = true,
 }: LoginFormProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const callbackUrl = useSearchParams().get('callbackUrl') || '/';
+  const [roleError, setRoleError] = useState('');
+  const callbackUrl = useSearchParams().get('callbackUrl') || '';
 
   const {
     register,
@@ -101,6 +118,7 @@ function LoginFormInner({
 
   async function onSubmit(data: LoginFormData) {
     setIsSubmitting(true);
+    setRoleError('');
 
     try {
       const res = await signIn('credentials', {
@@ -110,42 +128,35 @@ function LoginFormInner({
       });
 
       if (res?.error) {
-        throw new Error('Invalid credentials');
+        throw new Error('Invalid email or password. Please try again.');
+      }
+
+      // Fetch the session to get the user's actual role
+      const sessionRes = await fetch('/api/auth/session');
+      const sessionData = await sessionRes.json();
+      const userRole: string = sessionData?.user?.role || 'CUSTOMER';
+
+      // ✅ Role validation: if this login page expects a specific role, enforce it
+      if (expectedRole && userRole !== expectedRole) {
+        // Sign the user back out — they used the wrong login portal
+        await fetch('/api/auth/signout', { method: 'POST' });
+        const correctLoginUrl = ROLE_LOGIN_URLS[userRole] || '/auth/login';
+        setRoleError(
+          `This account is registered as "${userRole.replace('_', ' ')}". Please use the correct login portal.`
+        );
+        setIsSubmitting(false);
+        return;
       }
 
       toast.success('Welcome back!');
 
-      if (callbackUrl === '/') {
-        // Fetch session to determine role
-        const sessionRes = await fetch('/api/auth/session');
-        const sessionData = await sessionRes.json();
-        
-        if (sessionData?.user) {
-          switch (sessionData.user.role) {
-            case 'RESTAURANT_OWNER':
-              router.push('/dashboard/restaurant');
-              break;
-            case 'DELIVERY_PARTNER':
-              router.push('/dashboard/delivery');
-              break;
-            case 'MALL_ADMIN':
-              router.push('/dashboard/admin');
-              break;
-            case 'SUPER_ADMIN':
-              router.push('/dashboard/superadmin');
-              break;
-            case 'CUSTOMER':
-            default:
-              router.push('/'); 
-              break;
-          }
-        } else {
-          router.push('/');
-        }
-      } else {
-        router.push(callbackUrl);
-      }
-      
+      // Determine redirect destination
+      const destination =
+        callbackUrl && callbackUrl !== '/'
+          ? callbackUrl
+          : ROLE_DESTINATIONS[userRole] || '/customer';
+
+      router.push(destination);
       router.refresh();
     } catch (error) {
       toast.error(
@@ -155,6 +166,11 @@ function LoginFormInner({
       setIsSubmitting(false);
     }
   }
+
+  // For Google: only redirect to the customer dashboard
+  const googleCallbackUrl = expectedRole === 'CUSTOMER' || !expectedRole
+    ? '/customer'
+    : callbackUrl || '/customer';
 
   return (
     <motion.div
@@ -171,28 +187,44 @@ function LoginFormInner({
         </p>
       </motion.div>
 
-      {/* Google OAuth */}
-      <motion.div variants={itemVariants}>
-        <Button
-          variant="outline"
-          className="relative w-full"
-          type="button"
-          onClick={() => signIn('google', { callbackUrl })}
+      {/* Role mismatch error */}
+      {roleError && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
         >
-          <Chrome className="mr-2 h-4 w-4" />
-          Continue with Google
-        </Button>
-      </motion.div>
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{roleError}</span>
+        </motion.div>
+      )}
 
-      {/* Divider */}
-      <motion.div variants={itemVariants} className="my-6">
-        <div className="relative">
-          <Separator />
-          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-            or continue with email
-          </span>
-        </div>
-      </motion.div>
+      {/* Google OAuth — only for customer and generic logins */}
+      {showGoogle && (expectedRole === 'CUSTOMER' || !expectedRole) && (
+        <>
+          <motion.div variants={itemVariants}>
+            <Button
+              variant="outline"
+              className="relative w-full"
+              type="button"
+              onClick={() => signIn('google', { callbackUrl: googleCallbackUrl })}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Continue with Google
+            </Button>
+          </motion.div>
+
+          {/* Divider */}
+          <motion.div variants={itemVariants} className="my-6">
+            <div className="relative">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                or continue with email
+              </span>
+            </div>
+          </motion.div>
+        </>
+      )}
 
       {/* Form */}
       <motion.form
@@ -288,25 +320,27 @@ function LoginFormInner({
           type="submit"
           className="w-full"
           size="lg"
-          loading={isSubmitting}
+          disabled={isSubmitting}
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>
       </motion.form>
 
       {/* Register link */}
-      <motion.div variants={itemVariants} className="mt-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <Link
-            href={registerLink}
-            className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80"
-          >
-            Create one
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </p>
-      </motion.div>
+      {registerLink && (
+        <motion.div variants={itemVariants} className="mt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link
+              href={registerLink}
+              className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              Create one
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </p>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

@@ -6,6 +6,8 @@ export default function SuperAdminLoginPage() {
       title="Super Admin Login"
       description="Sign in to the central dashboard"
       expectedRole="SUPER_ADMIN"
+      showGoogle={false}
+      registerLink=""
     />
   );
 }

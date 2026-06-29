@@ -6,6 +6,8 @@ export default function MallAdminLoginPage() {
       title="Mall Admin Login"
       description="Sign in to manage your mall operations"
       expectedRole="MALL_ADMIN"
+      showGoogle={false}
+      registerLink=""
     />
   );
 }
