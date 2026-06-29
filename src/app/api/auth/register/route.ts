@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         name,
         phone,
         role,
+        isActive: true,
       },
       select: {
         id: true,

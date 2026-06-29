@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, useRef, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,6 +53,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from 'next-themes';
+import { getLiveOrders } from '@/actions/restaurant/orders';
+import toast from 'react-hot-toast';
 
 interface NavItem {
   href: string;
@@ -419,6 +421,9 @@ export default function RestaurantClientLayout({ children, restaurantName, userN
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [mounted, setMounted] = useState(false);
+  const [activeAlertOrder, setActiveAlertOrder] = useState<any>(null);
+  const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const router = useRouter();
 
   useEffect(() => setMounted(true), []);
 
@@ -430,6 +435,92 @@ export default function RestaurantClientLayout({ children, restaurantName, userN
 
   const markAllAsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const playBurst = (startTime: number, freq: number, dur: number) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + dur);
+      };
+      const now = audioCtx.currentTime;
+      playBurst(now, 880, 0.15);
+      playBurst(now + 0.08, 987, 0.15);
+      playBurst(now + 0.3, 880, 0.15);
+      playBurst(now + 0.38, 987, 0.15);
+      playBurst(now + 0.6, 880, 0.15);
+      playBurst(now + 0.68, 987, 0.15);
+    } catch (e) {
+      console.warn('AudioContext error:', e);
+    }
+  };
+
+  const triggerVibration = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 200]);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeAlertOrder) return;
+    playBeep();
+    triggerVibration();
+    const interval = setInterval(() => {
+      playBeep();
+      triggerVibration();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [activeAlertOrder]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadInitialOrders = async () => {
+      const res = await getLiveOrders();
+      if (res.success && res.data && isMounted) {
+        res.data.forEach((o: any) => {
+          seenOrderIdsRef.current.add(o.id);
+        });
+      }
+    };
+    loadInitialOrders();
+
+    const interval = setInterval(async () => {
+      const res = await getLiveOrders();
+      if (res.success && res.data && isMounted) {
+        const pendingNew = res.data.find(
+          (o: any) => o.status === 'PENDING' && !seenOrderIdsRef.current.has(o.id)
+        );
+        if (pendingNew) {
+          setActiveAlertOrder(pendingNew);
+          seenOrderIdsRef.current.add(pendingNew.id);
+          setNotifications(prev => [
+            {
+              id: pendingNew.id,
+              title: `New Order #${pendingNew.id.slice(-6).toUpperCase()}`,
+              message: `Incoming order from table - ₹${pendingNew.total}`,
+              read: false,
+              time: 'Just now',
+              type: 'order'
+            },
+            ...prev
+          ]);
+        }
+      }
+    }, 8000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -456,6 +547,56 @@ export default function RestaurantClientLayout({ children, restaurantName, userN
           </footer>
         </div>
       </div>
+
+      {/* Absolute Overlay Banner for Incoming Orders */}
+      <AnimatePresence>
+        {activeAlertOrder && (
+          <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+            <motion.div
+              initial={{ scale: 0.9, y: -40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: -40, opacity: 0 }}
+              className="flex w-full max-w-md items-center gap-4 rounded-2xl border border-destructive/30 bg-card/85 p-4 shadow-2xl backdrop-blur-xl ring-4 ring-destructive/10"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive animate-pulse">
+                <Bell className="h-6 w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-destructive uppercase tracking-wide animate-pulse">
+                  New Order Received!
+                </h3>
+                <p className="text-sm font-medium text-foreground truncate mt-0.5">
+                  Order #{activeAlertOrder.id.slice(-6).toUpperCase()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Amount: ₹{activeAlertOrder.total || '0'}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="rounded-xl px-3 font-semibold text-xs"
+                  onClick={() => {
+                    setActiveAlertOrder(null);
+                    router.push('/dashboard/restaurant/orders');
+                  }}
+                >
+                  View
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl px-3 text-xs"
+                  onClick={() => setActiveAlertOrder(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </DashboardContext.Provider>
   );
 }

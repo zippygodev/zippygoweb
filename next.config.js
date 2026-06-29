@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['bcrypt'],
   experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   images: {

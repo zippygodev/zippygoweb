@@ -35,6 +35,7 @@ interface CartItem {
   name: string;
   image: string;
   variant: string;
+  variantId?: string;
   price: number;
   quantity: number;
   specialInstructions: string;
@@ -49,6 +50,8 @@ interface CartContextType {
   clearCart: () => void;
   itemCount: number;
   subtotal: number;
+  getDeliveryType: () => 'PICKUP' | 'TABLE';
+  setDeliveryType: (type: 'PICKUP' | 'TABLE') => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -226,6 +229,7 @@ function Header() {
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [deliveryType, setDeliveryType] = useState<'PICKUP' | 'TABLE'>('PICKUP');
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const refreshNotifications = useCallback(async () => {
@@ -292,7 +296,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   }, [refreshNotifications]);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, updateInstructions, clearCart, itemCount, subtotal }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, updateInstructions, clearCart, itemCount, subtotal, getDeliveryType: () => deliveryType, setDeliveryType }}>
       <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications }}>
         <div className="mx-auto min-h-screen max-w-lg bg-background pb-20">
           <Header />

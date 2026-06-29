@@ -88,6 +88,14 @@ export async function placeOrder(data: PlaceOrderData) {
     const session = await auth();
     if (!session?.user) return { success: false, error: 'Unauthorized' };
 
+    // Validate restaurant exists and is active
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { id: data.restaurantId, deletedAt: null },
+      select: { id: true, isActive: true, isOpen: true },
+    });
+    if (!restaurant) return { success: false, error: 'Restaurant not found' };
+    if (!restaurant.isActive) return { success: false, error: 'Restaurant is not active' };
+
     const orderNumber = generateOrderNumber();
 
     const order = await prisma.order.create({
@@ -117,6 +125,16 @@ export async function placeOrder(data: PlaceOrderData) {
             specialInstructions: item.specialInstructions,
           })),
         },
+      },
+    });
+
+    // Create a notification for the customer
+    await prisma.notification.create({
+      data: {
+        userId: session.user.id,
+        title: 'Order Placed',
+        message: `Your order #${orderNumber} has been placed successfully.`,
+        type: 'ORDER_UPDATE',
       },
     });
 

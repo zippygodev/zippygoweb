@@ -28,10 +28,10 @@ import {
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, updateQuantity, updateInstructions, removeItem, subtotal, clearCart } = useCart();
+  const { items, updateQuantity, updateInstructions, removeItem, subtotal, clearCart, getDeliveryType, setDeliveryType: setContextDeliveryType } = useCart();
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
-  const [deliveryType, setDeliveryType] = useState<'pickup' | 'table'>('pickup');
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'table'>(getDeliveryType() === 'TABLE' ? 'table' : 'pickup');
   const [tableNumber, setTableNumber] = useState('');
   const [couponError, setCouponError] = useState('');
 
@@ -91,7 +91,10 @@ export default function CartPage() {
             return (
               <button
                 key={option.value}
-                onClick={() => setDeliveryType(option.value as 'pickup' | 'table')}
+                onClick={() => {
+                  setDeliveryType(option.value as 'pickup' | 'table');
+                  setContextDeliveryType(option.value === 'table' ? 'TABLE' : 'PICKUP');
+                }}
                 className={cn(
                   'flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all',
                   isActive

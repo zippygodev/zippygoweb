@@ -334,6 +334,7 @@ export default function RestaurantDetailPage() {
                           name: item.name,
                           image: item.imageUrl || '',
                           variant: variant ? variant.name : 'Regular',
+                          variantId: variant?.id,
                           price: variant ? Number(variant.price) : Number(item.price),
                           quantity,
                         });

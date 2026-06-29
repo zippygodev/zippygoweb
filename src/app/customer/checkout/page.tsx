@@ -47,7 +47,7 @@ const initialForm: FormData = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, getDeliveryType } = useCart();
   const [form, setForm] = useState<FormData>(initialForm);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
   const [processing, setProcessing] = useState(false);
@@ -96,13 +96,15 @@ export default function CheckoutPage() {
       const firstItem = items[0];
       if (!firstItem) throw new Error('Cart is empty');
 
+      const deliveryType = getDeliveryType();
       const res = await placeOrder({
         restaurantId: firstItem.restaurantId,
-        deliveryType: 'PICKUP',
+        deliveryType,
         notes: form.notes,
         paymentMethod: paymentMethod === 'razorpay' ? 'RAZORPAY' : 'COD',
         items: items.map((item) => ({
           productId: item.menuItemId,
+          variantId: item.variantId,
           productName: item.name,
           quantity: item.quantity,
           unitPrice: item.price,

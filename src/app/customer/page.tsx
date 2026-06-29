@@ -368,6 +368,7 @@ export default function CustomerHomePage() {
                               name: item.name,
                               image: item.imageUrl || '',
                               variant: item.variants?.[0]?.name || 'Regular',
+                              variantId: item.variants?.[0]?.id,
                               price: Number(item.price),
                               quantity: 1,
                             });
